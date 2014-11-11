@@ -1,4 +1,4 @@
-update=Di 11 Nov 2014 23:16:51 CET
+update=Mi 12 Nov 2014 00:11:22 CET
 version=1
 last_client=kicad
 [cvpcb]
@@ -62,3 +62,4 @@ LibName28=atmel
 LibName29=contrib
 LibName30=valves
 LibName31=toni
+LibName32=dac8560
