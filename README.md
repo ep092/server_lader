@@ -21,8 +21,11 @@ Der Mod:
 siehe elweb, eigene Bilder folgen noch.
 
 
-
-TODO:
--Umbau auf 60V, momentan schaltet sich das Netzgerät bei 54V Ausgangsspannung
- durch einen integrierten Überspannungsschutz selbst ab. Dies muss noch
- ausgehoben werden.
+Umbau auf 60V
+ Dazu ist es notwendig einen zusätzlichen Widerstand auf einer der Platinen einzulöten.
+ Im Ordner Bilder ist die Stelle zu sehen, wo der Widerstand eingelötet werden muss. 
+ Aktuell getestet ist ein zusätzlicher 3k Ohm Widerstand, der jedoch die Überspannungsabschaltung
+ etwas zu weit anhebt, denn bei 61V lief das Netzteil immer noch.
+ TODO: genauen Widerstandswert mit Hilfe eines Potis herausfinden.
+ 
+ 
