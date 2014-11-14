@@ -1,0 +1,458 @@
+Cmp-Mod V01 Created by Cvpcb (2014-10-31 BZR 5243)-product   date = Fr 14 Nov 2014 02:16:34 CET
+
+BeginCmp
+TimeStamp = /5462A945;
+Reference = C1;
+ValeurCmp = 100nF;
+IdModule  = SMD_Packages:SMD-0402;
+EndCmp
+
+BeginCmp
+TimeStamp = /5462AC6A;
+Reference = C2;
+ValeurCmp = 100nF;
+IdModule  = SMD_Packages:SMD-0402;
+EndCmp
+
+BeginCmp
+TimeStamp = /5462AD56;
+Reference = C3;
+ValeurCmp = 100nF;
+IdModule  = SMD_Packages:SMD-0402;
+EndCmp
+
+BeginCmp
+TimeStamp = /545FE861;
+Reference = C4;
+ValeurCmp = 100uF;
+IdModule  = SMD_Packages:SMD-0402;
+EndCmp
+
+BeginCmp
+TimeStamp = /5462AB07;
+Reference = C5;
+ValeurCmp = 1uF;
+IdModule  = SMD_Packages:SMD-0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /5464F729;
+Reference = C6;
+ValeurCmp = 100nF;
+IdModule  = SMD_Packages:SMD-0402;
+EndCmp
+
+BeginCmp
+TimeStamp = /5464F6FD;
+Reference = C7;
+ValeurCmp = 100nF;
+IdModule  = SMD_Packages:SMD-0402;
+EndCmp
+
+BeginCmp
+TimeStamp = /54659B99;
+Reference = C8;
+ValeurCmp = 100nF;
+IdModule  = SMD_Packages:SMD-0402;
+EndCmp
+
+BeginCmp
+TimeStamp = /5464F710;
+Reference = C9;
+ValeurCmp = 100nF;
+IdModule  = SMD_Packages:SMD-0402;
+EndCmp
+
+BeginCmp
+TimeStamp = /5465A59C;
+Reference = C10;
+ValeurCmp = 1uF;
+IdModule  = SMD_Packages:SMD-0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /54656004;
+Reference = C11;
+ValeurCmp = 100nF;
+IdModule  = SMD_Packages:SMD-0402;
+EndCmp
+
+BeginCmp
+TimeStamp = /54641D95;
+Reference = C12;
+ValeurCmp = 100nF;
+IdModule  = SMD_Packages:SMD-0402;
+EndCmp
+
+BeginCmp
+TimeStamp = /54641FE6;
+Reference = C13;
+ValeurCmp = 100nF;
+IdModule  = SMD_Packages:SMD-0402;
+EndCmp
+
+BeginCmp
+TimeStamp = /5462C075;
+Reference = C14;
+ValeurCmp = 1uF;
+IdModule  = SMD_Packages:SMD-0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /5462C429;
+Reference = C15;
+ValeurCmp = 100nF;
+IdModule  = SMD_Packages:SMD-0402;
+EndCmp
+
+BeginCmp
+TimeStamp = /5462C2DF;
+Reference = C16;
+ValeurCmp = 100nF;
+IdModule  = SMD_Packages:SMD-0402;
+EndCmp
+
+BeginCmp
+TimeStamp = /5462A271;
+Reference = C17;
+ValeurCmp = 10uF;
+IdModule  = SMD_Packages:SMD-1206;
+EndCmp
+
+BeginCmp
+TimeStamp = /5462A0B7;
+Reference = C18;
+ValeurCmp = 10nF;
+IdModule  = SMD_Packages:SMD-0402;
+EndCmp
+
+BeginCmp
+TimeStamp = /54629CFA;
+Reference = C19;
+ValeurCmp = 10nF;
+IdModule  = SMD_Packages:SMD-0402;
+EndCmp
+
+BeginCmp
+TimeStamp = /546609C8;
+Reference = C20;
+ValeurCmp = C_comp;
+IdModule  = SMD_Packages:SMD-0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /5462A430;
+Reference = C21;
+ValeurCmp = 10uF;
+IdModule  = SMD_Packages:SMD-1206;
+EndCmp
+
+BeginCmp
+TimeStamp = /5465C97B;
+Reference = C22;
+ValeurCmp = 100nF;
+IdModule  = SMD_Packages:SMD-0402;
+EndCmp
+
+BeginCmp
+TimeStamp = /5465CB51;
+Reference = C23;
+ValeurCmp = 100nF;
+IdModule  = SMD_Packages:SMD-0402;
+EndCmp
+
+BeginCmp
+TimeStamp = /545FE433;
+Reference = D1;
+ValeurCmp = ZENER 5,6V;
+IdModule  = ;
+EndCmp
+
+BeginCmp
+TimeStamp = /54653C35;
+Reference = D2;
+ValeurCmp = LED;
+IdModule  = SMD_Packages:SMD-0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /54658A3E;
+Reference = DISP1;
+ValeurCmp = EA_DOG-M;
+IdModule  = toni:EA_DOG-M_DISP;
+EndCmp
+
+BeginCmp
+TimeStamp = /54659420;
+Reference = F1;
+ValeurCmp = FUSE;
+IdModule  = toni:fuse_holder_Schurther;
+EndCmp
+
+BeginCmp
+TimeStamp = /545FB3DD;
+Reference = IC1;
+ValeurCmp = ATMEGA168PA-A;
+IdModule  = SMD_Packages:TQFP-32;
+EndCmp
+
+BeginCmp
+TimeStamp = /5462BFB9;
+Reference = IC2;
+ValeurCmp = DAC8560;
+IdModule  = Housings_SSOP:MSOP-8_3x3mm_Pitch0.65mm;
+EndCmp
+
+BeginCmp
+TimeStamp = /5464F2B3;
+Reference = P1;
+ValeurCmp = 5V_Vbatt;
+IdModule  = Sockets_MOLEX_KK-System:Socket_MOLEX-KK-RM2-54mm_Lock_3pin_straight;
+EndCmp
+
+BeginCmp
+TimeStamp = /54656C94;
+Reference = P2;
+ValeurCmp = DISPLAY_STECKER;
+IdModule  = ;
+EndCmp
+
+BeginCmp
+TimeStamp = /545FB82D;
+Reference = P3;
+ValeurCmp = CONN_02X03;
+IdModule  = toni:micro_match3x2;
+EndCmp
+
+BeginCmp
+TimeStamp = /546575D6;
+Reference = P4;
+ValeurCmp = I2C;
+IdModule  = Sockets_MOLEX_KK-System:Socket_MOLEX-KK-RM2-54mm_Lock_4pin_straight;
+EndCmp
+
+BeginCmp
+TimeStamp = /54652A54;
+Reference = P5;
+ValeurCmp = IP+;
+IdModule  = ;
+EndCmp
+
+BeginCmp
+TimeStamp = /54652C7D;
+Reference = P6;
+ValeurCmp = IP-;
+IdModule  = ;
+EndCmp
+
+BeginCmp
+TimeStamp = /545FBACF;
+Reference = P7;
+ValeurCmp = UART;
+IdModule  = Sockets_MOLEX_KK-System:Socket_MOLEX-KK-RM2-54mm_Lock_4pin_straight;
+EndCmp
+
+BeginCmp
+TimeStamp = /5464F19A;
+Reference = P8;
+ValeurCmp = CONN_01X01;
+IdModule  = ;
+EndCmp
+
+BeginCmp
+TimeStamp = /54658C91;
+Reference = P9;
+ValeurCmp = Drehrad;
+IdModule  = Sockets_MOLEX_KK-System:Socket_MOLEX-KK-RM2-54mm_Lock_6pin_straight;
+EndCmp
+
+BeginCmp
+TimeStamp = /54601125;
+Reference = P10;
+ValeurCmp = DISPLAY_STECKER;
+IdModule  = ;
+EndCmp
+
+BeginCmp
+TimeStamp = /5465CFD0;
+Reference = P11;
+ValeurCmp = on/off;
+IdModule  = Sockets_MOLEX_KK-System:Socket_MOLEX-KK-RM2-54mm_Lock_3pin_straight;
+EndCmp
+
+BeginCmp
+TimeStamp = /5465D981;
+Reference = P12;
+ValeurCmp = A_regulation_out;
+IdModule  = Sockets_MOLEX_KK-System:Socket_MOLEX-KK-RM2-54mm_Lock_3pin_straight;
+EndCmp
+
+BeginCmp
+TimeStamp = /545FE7C4;
+Reference = R1;
+ValeurCmp = 1k;
+IdModule  = SMD_Packages:SMD-0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54656562;
+Reference = R2;
+ValeurCmp = 200R;
+IdModule  = SMD_Packages:SMD-0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /5465BAC2;
+Reference = R3;
+ValeurCmp = R;
+IdModule  = SMD_Packages:SMD-0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /5465B300;
+Reference = R4;
+ValeurCmp = 20k;
+IdModule  = SMD_Packages:SMD-0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /5465C199;
+Reference = R5;
+ValeurCmp = 20k;
+IdModule  = SMD_Packages:SMD-0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54653AE7;
+Reference = R6;
+ValeurCmp = 1k;
+IdModule  = SMD_Packages:SMD-0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /5464E48C;
+Reference = R7;
+ValeurCmp = 12k;
+IdModule  = SMD_Packages:SMD-0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /5464E205;
+Reference = R8;
+ValeurCmp = 1k;
+IdModule  = SMD_Packages:SMD-0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /5464EC7A;
+Reference = R9;
+ValeurCmp = R;
+IdModule  = SMD_Packages:SMD-0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /5464EC74;
+Reference = R10;
+ValeurCmp = R;
+IdModule  = SMD_Packages:SMD-0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54659E1B;
+Reference = R11;
+ValeurCmp = 1k;
+IdModule  = SMD_Packages:SMD-0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54644B94;
+Reference = R12;
+ValeurCmp = R_G2;
+IdModule  = SMD_Packages:SMD-0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /546446D7;
+Reference = R13;
+ValeurCmp = R_G1;
+IdModule  = SMD_Packages:SMD-0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54629E8F;
+Reference = R14;
+ValeurCmp = R1;
+IdModule  = SMD_Packages:SMD-0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54629EFA;
+Reference = R15;
+ValeurCmp = R2;
+IdModule  = SMD_Packages:SMD-0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54644588;
+Reference = R16;
+ValeurCmp = R_FB;
+IdModule  = SMD_Packages:SMD-0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54651C1E;
+Reference = SP1;
+ValeurCmp = SPEAKER;
+IdModule  = toni:Buzzer_AI-1027-TWT-5V-R;
+EndCmp
+
+BeginCmp
+TimeStamp = /546550F4;
+Reference = U1;
+ValeurCmp = ACS758;
+IdModule  = ;
+EndCmp
+
+BeginCmp
+TimeStamp = /5465CA00;
+Reference = U2;
+ValeurCmp = LTV-356T;
+IdModule  = toni:SO-4;
+EndCmp
+
+BeginCmp
+TimeStamp = /5462CAA6;
+Reference = U3;
+ValeurCmp = ADUM3441;
+IdModule  = Housings_SOIC:SOIC-16_7.5x10.3mm_Pitch1.27mm;
+EndCmp
+
+BeginCmp
+TimeStamp = /5462A69F;
+Reference = U4;
+ValeurCmp = RD-0512D;
+IdModule  = ;
+EndCmp
+
+BeginCmp
+TimeStamp = /54629C4B;
+Reference = U5;
+ValeurCmp = TPS7A4901;
+IdModule  = toni:MSOP-8_power_pad;
+EndCmp
+
+BeginCmp
+TimeStamp = /54629CF8;
+Reference = U6;
+ValeurCmp = OPA188;
+IdModule  = SMD_Packages:SSOP-8;
+EndCmp
+
+BeginCmp
+TimeStamp = /54650B0C;
+Reference = X1;
+ValeurCmp = Resonator CSTCE16M0V53;
+IdModule  = ;
+EndCmp
+
+EndListe
