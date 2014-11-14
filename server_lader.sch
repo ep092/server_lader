@@ -1750,7 +1750,6 @@ F 3 "" H 5000 5750 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 NoConn ~ 3700 1600
-NoConn ~ 1800 2850
 NoConn ~ 1800 2950
 $Comp
 L R R4
@@ -2220,5 +2219,16 @@ F 2 "toni:CerOsc_3,2x1,3" H 2900 1050 60  0001 C CNN
 F 3 "" H 2900 1050 60  0000 C CNN
 	1    2900 1050
 	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR?
+U 1 1 5466ABD3
+P 1800 2850
+F 0 "#PWR?" H 1800 2850 30  0001 C CNN
+F 1 "GND" H 1800 2780 30  0001 C CNN
+F 2 "" H 1800 2850 60  0000 C CNN
+F 3 "" H 1800 2850 60  0000 C CNN
+	1    1800 2850
+	0    1    1    0   
 $EndComp
 $EndSCHEMATC
