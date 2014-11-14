@@ -1,4 +1,4 @@
-Cmp-Mod V01 Created by Cvpcb (2014-10-31 BZR 5243)-product   date = Fr 14 Nov 2014 02:16:34 CET
+Cmp-Mod V01 Created by Cvpcb (2014-10-31 BZR 5243)-product   date = Fr 14 Nov 2014 22:50:12 CET
 
 BeginCmp
 TimeStamp = /5462A945;
@@ -162,10 +162,17 @@ IdModule  = SMD_Packages:SMD-0402;
 EndCmp
 
 BeginCmp
+TimeStamp = /5465917C;
+Reference = C24;
+ValeurCmp = 1uF;
+IdModule  = SMD_Packages:SMD-0603;
+EndCmp
+
+BeginCmp
 TimeStamp = /545FE433;
 Reference = D1;
 ValeurCmp = ZENER 5,6V;
-IdModule  = ;
+IdModule  = Diodes_SMD:Diode-Universal-SMA-SMB_Handsoldering;
 EndCmp
 
 BeginCmp
@@ -214,7 +221,7 @@ BeginCmp
 TimeStamp = /54656C94;
 Reference = P2;
 ValeurCmp = DISPLAY_STECKER;
-IdModule  = ;
+IdModule  = toni:micro_match5x2;
 EndCmp
 
 BeginCmp
@@ -235,14 +242,14 @@ BeginCmp
 TimeStamp = /54652A54;
 Reference = P5;
 ValeurCmp = IP+;
-IdModule  = ;
+IdModule  = toni:power_terminal;
 EndCmp
 
 BeginCmp
 TimeStamp = /54652C7D;
 Reference = P6;
 ValeurCmp = IP-;
-IdModule  = ;
+IdModule  = toni:power_terminal;
 EndCmp
 
 BeginCmp
@@ -256,7 +263,7 @@ BeginCmp
 TimeStamp = /5464F19A;
 Reference = P8;
 ValeurCmp = CONN_01X01;
-IdModule  = ;
+IdModule  = Connect:SIL-1;
 EndCmp
 
 BeginCmp
@@ -270,7 +277,7 @@ BeginCmp
 TimeStamp = /54601125;
 Reference = P10;
 ValeurCmp = DISPLAY_STECKER;
-IdModule  = ;
+IdModule  = toni:micro_match5x2;
 EndCmp
 
 BeginCmp
@@ -400,6 +407,13 @@ IdModule  = SMD_Packages:SMD-0805;
 EndCmp
 
 BeginCmp
+TimeStamp = /546588C7;
+Reference = R17;
+ValeurCmp = 10k;
+IdModule  = SMD_Packages:SMD-0805;
+EndCmp
+
+BeginCmp
 TimeStamp = /54651C1E;
 Reference = SP1;
 ValeurCmp = SPEAKER;
@@ -410,7 +424,7 @@ BeginCmp
 TimeStamp = /546550F4;
 Reference = U1;
 ValeurCmp = ACS758;
-IdModule  = ;
+IdModule  = toni:ACS758_PFF;
 EndCmp
 
 BeginCmp
@@ -431,7 +445,7 @@ BeginCmp
 TimeStamp = /5462A69F;
 Reference = U4;
 ValeurCmp = RD-0512D;
-IdModule  = ;
+IdModule  = toni:RD-xx12D;
 EndCmp
 
 BeginCmp
@@ -449,10 +463,10 @@ IdModule  = SMD_Packages:SSOP-8;
 EndCmp
 
 BeginCmp
-TimeStamp = /54650B0C;
-Reference = X1;
-ValeurCmp = Resonator CSTCE16M0V53;
-IdModule  = ;
+TimeStamp = /54667D59;
+Reference = Y1;
+ValeurCmp = RESONATEUR;
+IdModule  = toni:CerOsc_3,2x1,3;
 EndCmp
 
 EndListe
