@@ -58,8 +58,9 @@ void adcStart(void) {
 	ADCSRA |= 1<<ADSC;
 }
 
-// ADC auslesen im Interrupt.
-
+void timerInit(void) {
+	
+}
 
 
 // Drehrad Interrupts
@@ -75,9 +76,46 @@ ISR(INT1_vect, ISR_BLOCK) {
 }
 
 // ADC Conversion complete Interrupt
-uint16_t uNetzteil=0, uReserve=0, Strom=0;
-ISR(ADCxx_vect, ISR_BLOCK) {
-	
+// ADC0 = uNetzteil, ADC1 = uReserve, ADC2 = strom
+
+#define REFERENZ 5.1f			// hier noch auf Betriebsspannung des NT gesetzt
+#define NTCAL (REFERENZ/1024*1)		// U in Volt
+#define RESCAL (REFERENZ/1024*1)	// U in Volt
+#define ICAL (REFERENZ/1024*1)		// I in Ampere
+#define MITTELWERTE 5
+volatile float uNetzteil=0, uReserve=0, strom=0;
+
+ISR(ADC_vect, ISR_BLOCK) {
+	// ADC-Auslesungen und Rechnung mit Gleitmittelwert über 5 Werte
+	static uint16_t tabelle[3*MITTELWERTE]; // hier kommen die ADC-werte rein.
+	static uint8_t counter = 0;
+	uint16_t temp=0;
+	tabelle[counter++] = ADC; // fülle Tabelle mit ADC-Werten
+	if (counter == 15) { // setze Counter zurück
+		counter = 0;
+	}
+	switch (counter%3) {
+		case 0:
+			// uNetzteil wird ausgerechnet
+			for(uint8_t i=0; i<5; i++) {
+				temp += tabelle[0 + 3*i];
+			}
+			uNetzteil = ((float)temp*NTCAL/MITTELWERTE);
+		
+		case 1:
+			// uReserve wird ausgerechnet
+			for(uint8_t i=0; i<5; i++) {
+				temp += tabelle[1 + 3*i];
+			}
+			uReserve = ((float)temp*RESCAL/MITTELWERTE);
+		
+		case 2:
+			// strom wird ausgerechnet
+			for(uint8_t i=0; i<5; i++) {
+				temp += tabelle[2 + 3*i];
+			}
+			strom = ((float)temp*ICAL/MITTELWERTE);
+	}
 }
 
 
@@ -92,8 +130,9 @@ int main(void) {
 	i2c_init();
 	uartInit();
 	adcInit();
-	dacInit();
-	lcd_init();
+	timerInit();
+// 	dacInit();
+// 	lcd_init();
 	
 	uartTxStrln("Guten Tag!");
 	uartTxStrln("REICH TIME");
