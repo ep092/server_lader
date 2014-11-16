@@ -85,6 +85,7 @@ void dacSetValue(uint16_t wert, uint8_t mode) {
 #define RG1 1
 #define RG2 1
 #define DAC_REF 2.5
+#define UMAX 61000
 #define T 55.44
 #define M -4.9
 
@@ -92,7 +93,7 @@ void dacSetValue(uint16_t wert, uint8_t mode) {
 #define K2 ((float)RFB/(float)RG2)*DAC_REF
 
 void setPowerOutput(uint16_t millivolt) {
-	if (millivolt<61000) { // Schutz vor Überspannung
+	if (millivolt<UMAX) { // Schutz vor Überspannung
 		// Berechnung des DAC-wertes aus der sollspannung
 		dacSetValue((uint16_t)(((((((float)millivolt / 1000) - T) / M) + K2) * 65536) / (K1 * DAC_REF)), 0);
 	} else {
