@@ -81,6 +81,25 @@ void dacSetValue(uint16_t wert, uint8_t mode) {
 	SPCR = tempspcr;
 }
 
+#define RFB 1
+#define RG1 1
+#define RG2 1
+#define DAC_REF 2.5
+#define T 55.44
+#define M -4.9
+
+#define K1 1+((float)RFB/(float)RG2)+((float)RFB/(float)RG1)
+#define K2 ((float)RFB/(float)RG2)*DAC_REF
+
+void setPowerOutput(uint16_t millivolt) {
+	if (millivolt<61000) { // Schutz vor Überspannung
+		// Berechnung des DAC-wertes aus der sollspannung
+		dacSetValue((uint16_t)(((((((float)millivolt / 1000) - T) / M) + K2) * 65536) / (K1 * DAC_REF)), 0);
+	} else {
+		; // nix. wert wird nicht geändert
+	}
+}
+
 void timerInit(void) {
 	// Timer/Counter1 im CTC modus verwenden. alle 10ms ein Interrupt
 	TCCR1A = 0; // CTC (mode 4)
@@ -134,11 +153,12 @@ ISR(PCINT2_vect, ISR_BLOCK) {
 
 // ADC Conversion complete Interrupt
 // ADC0 = uNetzteil, ADC1 = uReserve, ADC2 = strom
+// Die Werte können noch kalibriert werden, allerdings nicht zur Laufzeit.
 
-#define REFERENZ 5.1f			// hier noch auf Betriebsspannung des NT gesetzt
-#define NTCAL (REFERENZ/1024*1)		// U in Volt
-#define RESCAL (REFERENZ/1024*1)	// U in Volt
-#define ICAL (REFERENZ/1024*1)		// I in Ampere
+#define REFERENZ 5.1f				// hier noch auf Betriebsspannung des NT gesetzt
+#define NTCAL (REFERENZ/1024/0.076923)		// 1/13V/V vom Spannungsteiler
+#define RESCAL (REFERENZ/1024/1)		// ? vom Spannungsteiler
+#define ICAL (REFERENZ/1024/0.06)		// 60mV/A kommt vom Sensor
 #define MITTELWERTE 5
 volatile float uNetzteil=0, uReserve=0, strom=0;
 
