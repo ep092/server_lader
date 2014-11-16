@@ -22,7 +22,7 @@ siehe elweb, eigene Bilder folgen noch.
 
 -------------------------------------------------------------------
 
-Umbau auf eine ander overvoltage protection Spannung
+Umbau auf eine ander overvoltage protection Spannung:
  Dazu ist es notwendig einen zusätzlichen Widerstand parallel zu den bereits vorhandenen
  auf einer der Platinen einzulöten.
  Im Ordner Bilder ist die Stelle zu sehen, wo der Widerstand eingelötet werden muss. 
