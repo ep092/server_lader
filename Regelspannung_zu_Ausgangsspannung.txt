@@ -1,4 +1,4 @@
-Regelspannung  Ausgangsspannun  delta Regelspannung/delta Ausgangsspannu
+Regelspannung  Ausgangsspannun  delta Ausgangsspannug/delta Regelspannung
          -1,2            59,45  
          -1,1               59                                     -4,50
          -1,0            58,62                                     -3,80
