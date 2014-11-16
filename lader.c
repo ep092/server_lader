@@ -99,24 +99,35 @@ ISR(TIMER1_OVF_vect, ISR_BLOCK) {
 
 // Drehrad Interrupts
 volatile uint8_t knopf=0;
+// knopf-Datentyp:	7:0 		6:0 		5:STEP_TEMP_LINKS 	4:STEP_TEMP_RECHTS
+//			3:STEP_LINKS 	2:STEP_RECHTS 	1:KNOPF-GEDRÜCKT 	0:KNOPF-LOSGELASSEN
 // Drehung Pin 1
 ISR(INT0_vect, ISR_BLOCK) {
-	
+	if(knopf & 1<<5) { // knopf wurde eins nach links gedreht
+		sbi(knopf, 3);
+		cbi(knopf, 5);
+	} else { // knopf wurde eins nach rechts gedreht
+		sbi(knopf, 4);
+	}
 }
-
 
 // Drehung Pin 2
 ISR(INT1_vect, ISR_BLOCK) {
-	
+	if(knopf & 1<<4) { // knopf wurde eins nach rechts gedreht
+		sbi(knopf, 2);
+		cbi(knopf, 4);
+	} else { // knopf wurde eins nach links gedreht
+		sbi(knopf, 5);
+	}	
 }
 
 // KNOPFDRUCK oder loslassen
 ISR(PCINT2_vect, ISR_BLOCK) {
 	if(PIND & 1<<PD4) { // Knopf ist gerade losgelassen worden
-		knopf |= 1<<0;
-		knopf &= ~(1<<1); // lösche gedrückt-Bit wieder
+		sbi(knopf, 0);
+		cbi(knopf, 1); // lösche gedrückt-Bit wieder
 	} else { // Knopf gedrückt, warte auf loslassen
-		knopf |= 1<<1; // setze gedrückt-Bit
+		sbi(knopf, 1); // setze gedrückt-Bit
 	}
 }
 
@@ -181,6 +192,8 @@ int main(void) {
 	PCICR = 1<<PCIE2; // PCINT16 bis 23 aktiv
 	PCMSK2 = 1<<PCINT20; // Interrupt auf fallender UND steigender Flanke von PD4
 	
+	delayms(100); // wait for clock stabilize
+	
 	// init der Module
 	i2c_init();
 	uartInit();
@@ -188,17 +201,23 @@ int main(void) {
 	timerInit();
 	spiInit();
 	SS_DAC(1); // CS vom DAC ist idle high
-	DOGM163_init();
+	DOGM163_init(); // 3x16 Zeichen reflexives LCD
 	
 	uartTxStrln("Guten Tag!");
 	uartTxStrln("REICH TIME");
 	uartTxNewline();
 	uartTxNewline();
 	
+	spi_write_string("   Guten Tag!     gebaut von   Philipp und Toni"); // Begrüßung
+	LED(1);
+	delayms(10000);
+	
+	uint16_t sollspannung=30000, maximalstrom=10000; // Spannung in Millivolt, Strom in Milliampere
+	
 	sei(); // und es seien Interrupts (aktiv)!
 	
 	while(1) {
-		
+		// Regelung einfügen.
 	}
 	return 0;
 }
