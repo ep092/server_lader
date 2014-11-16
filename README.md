@@ -20,12 +20,19 @@ einstellen. Das Netzteil muss nur minimal gemoddet werden.
 Der Mod:
 siehe elweb, eigene Bilder folgen noch.
 
-
-Umbau auf 60V
- Dazu ist es notwendig einen zusätzlichen Widerstand auf einer der Platinen einzulöten.
+-------------------------------------------------------------------
+Umbau auf eine ander overvoltage protection Spannung
+ Dazu ist es notwendig einen zusätzlichen Widerstand parallel zu den bereits vorhandenen
+ auf einer der Platinen einzulöten.
  Im Ordner Bilder ist die Stelle zu sehen, wo der Widerstand eingelötet werden muss. 
- Aktuell getestet ist ein zusätzlicher 3k Ohm Widerstand, der jedoch die Überspannungsabschaltung
- etwas zu weit anhebt, denn bei 61V lief das Netzteil immer noch.
- TODO: genauen Widerstandswert mit Hilfe eines Potis herausfinden.
+ 
+ Es existieren Messwerte für 3 Spannungen
+ 61V 35,4k Ohm (-1,5V am Poti)
+ 60V 42,5k Ohm (-1,3V am Poti)
+ 59V 51,6k Ohm (-1,1V am Poti)
+ 
+ Wenn man die bereits verbauten Widerstände misst kommt man auf 4,096 Ohm.
+ Mit einem parallel geschaltenen 51,6k Ohm Widerstand kommt man so auf einen Widerstand von 3,79kOhm
+ 
  
  
