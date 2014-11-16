@@ -37,9 +37,18 @@
 uint8_t ERR=0;
 #include "../AtmelLib/io/serial/i2c.h"
 
-#define UBRRH_VALUE 1
-#define UBRRL_VALUE 2
+// UART: 19200 Baud, 1 Stopbit, no Parity, 8 Bit/frame
+#define UBRRH_VALUE 0
+#define UBRRL_VALUE 51
 #include "../AtmelLib/io/serial/uart.h"
+
+#define DISPLAY_RS_DDR   DDRD
+#define DISPLAY_RS_PORT	 PORTD
+#define DISPLAY_RS_PIN	 PD5
+#define DISPLAY_CSB_DDR  DDRD
+#define DISPLAY_CSB_PORT PORTD
+#define DISPLAY_CSB_PIN  PD6
+#include "EA_DOGM163L-A-Atmel-Lib/EA_DOGM163L-A.c"
 
 
 #define LED(x) out(PORTC,PC3,0,x)
@@ -131,8 +140,9 @@ int main(void) {
 	uartInit();
 	adcInit();
 	timerInit();
+	spiInit();
 // 	dacInit();
-// 	lcd_init();
+	DOGM163_init();
 	
 	uartTxStrln("Guten Tag!");
 	uartTxStrln("REICH TIME");
