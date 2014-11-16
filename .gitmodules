@@ -1,0 +1,3 @@
+[submodule "EA_DOGM163L-A-Atmel-Lib"]
+	path = EA_DOGM163L-A-Atmel-Lib
+	url = https://github.com/ep092/EA_DOGM163L-A-Atmel-Lib.git
