@@ -55,7 +55,6 @@ uint8_t ERR=0;
 #define NT_ON(x) out(PORTB,PB0,0,x)
 #define SPKR(x) out(PORTD,PD7,0,x)
 #define SS_DAC(x) out(PORTB,PB2,0,x)
-#define SS_LCD(x) out(PORTD,PD6,0,x)
 
 void adcInit(void) {
 	ADMUX = 1<<REFS0; // Referenz auf Vcc
@@ -67,22 +66,60 @@ void adcStart(void) {
 	ADCSRA |= 1<<ADSC;
 }
 
-void timerInit(void) {
+void dacSetValue(uint16_t wert, uint8_t mode) {
+	uint8_t tempspcr = SPCR; // sichere den Stand von SPCR
+	SPCR = 1<<SPE | 1<<MSTR | 1<<CPOL; // SPI MSB first, Clock on falling edge, sample on leading, VOLLGAS
 	
+	SS_DAC(0); // SS_DAC ist low active
+	SPDR = (0b00000011 & mode); // sende PowerDown-Mode
+	while (!(SPSR & (1<<SPIF))); // warte auf Transmission complete
+	SPDR = (wert>>8); // sende oberen Teil vom Datenwort
+	while (!(SPSR & (1<<SPIF)));
+	SPDR = (wert & 0xff); // sende unteren Teil vom Datenwort
+	while (!(SPSR & (1<<SPIF)));
+	SS_DAC(1);
+	SPCR = tempspcr;
+}
+
+void timerInit(void) {
+	// Timer/Counter1 im CTC modus verwenden. alle 10ms ein Interrupt
+	TCCR1A = 0; // CTC (mode 4)
+	TCCR1B = 1<<WGM12 | 1<<CS11 | 1<<CS10; // CTC (mode 4), Prescaler = 64 -> 4µs pro Timerschritt
+	OCR1A  = 2500; // TOP und Interrupt alle 10ms
+}
+
+// Der ADC wird interruptgesteuert
+volatile uint8_t counter = 0;
+ISR(TIMER1_OVF_vect, ISR_BLOCK) {
+	ADMUX = ADMUX & 0b11100000; // lösche selektiv die MUX-Bits
+	ADMUX |= (counter%3); // setze ADC-Kanal neu
+	ADCSRA |= 1<<ADC; // start conversion
 }
 
 
 // Drehrad Interrupts
-// 1
+volatile uint8_t knopf=0;
+// Drehung Pin 1
 ISR(INT0_vect, ISR_BLOCK) {
 	
 }
 
 
-// 2
+// Drehung Pin 2
 ISR(INT1_vect, ISR_BLOCK) {
 	
 }
+
+// KNOPFDRUCK oder loslassen
+ISR(PCINT2_vect, ISR_BLOCK) {
+	if(PIND & 1<<PD4) { // Knopf ist gerade losgelassen worden
+		knopf |= 1<<0;
+		knopf &= ~(1<<1); // lösche gedrückt-Bit wieder
+	} else { // Knopf gedrückt, warte auf loslassen
+		knopf |= 1<<1; // setze gedrückt-Bit
+	}
+}
+
 
 // ADC Conversion complete Interrupt
 // ADC0 = uNetzteil, ADC1 = uReserve, ADC2 = strom
@@ -97,7 +134,6 @@ volatile float uNetzteil=0, uReserve=0, strom=0;
 ISR(ADC_vect, ISR_BLOCK) {
 	// ADC-Auslesungen und Rechnung mit Gleitmittelwert über 5 Werte
 	static uint16_t tabelle[3*MITTELWERTE]; // hier kommen die ADC-werte rein.
-	static uint8_t counter = 0;
 	uint16_t temp=0;
 	tabelle[counter++] = ADC; // fülle Tabelle mit ADC-Werten
 	if (counter == 15) { // setze Counter zurück
@@ -127,6 +163,9 @@ ISR(ADC_vect, ISR_BLOCK) {
 	}
 }
 
+// Timer Interrupt, der den ADC steuert
+
+
 
 int main(void) {
 	DDRB  = 1<<PB0 | 1<<PB2 | 1<<PB3 | 1<<PB5;
@@ -135,13 +174,20 @@ int main(void) {
 	// Pullups
 	PORTD = 1<<PD4;
 	
+	// Pinchange Interrupts für das Drehrad und den Knopf
+	// Knopf hängt am PCINT20 (PD4)
+	EICRA = 1<<ISC11 | 1<<ISC10 | 1<<ISC01 | 1<<ISC00;
+	EIMSK = 1<<INT1 | 1<<INT0;
+	PCICR = 1<<PCIE2; // PCINT16 bis 23 aktiv
+	PCMSK2 = 1<<PCINT20; // Interrupt auf fallender UND steigender Flanke von PD4
+	
 	// init der Module
 	i2c_init();
 	uartInit();
 	adcInit();
 	timerInit();
 	spiInit();
-// 	dacInit();
+	SS_DAC(1); // CS vom DAC ist idle high
 	DOGM163_init();
 	
 	uartTxStrln("Guten Tag!");
@@ -149,7 +195,7 @@ int main(void) {
 	uartTxNewline();
 	uartTxNewline();
 	
-	sei();
+	sei(); // und es seien Interrupts (aktiv)!
 	
 	while(1) {
 		
