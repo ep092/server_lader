@@ -29,8 +29,11 @@ Umbau auf eine ander overvoltage protection Spannung:
  Im Ordner Bilder ist die Stelle zu sehen, wo der Widerstand eingelötet werden muss. 
  
  Es existieren Messwerte für 3 Spannungen
+ 
  61V 35,4k Ohm (-1,5V am Poti)
+ 
  60V 42,5k Ohm (-1,3V am Poti)
+ 
  59V 51,6k Ohm (-1,1V am Poti)
  
  Wenn man die bereits verbauten Widerstände misst kommt man auf 4,096 Ohm.
