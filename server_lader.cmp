@@ -1,4 +1,4 @@
-Cmp-Mod V01 Created by Cvpcb (2014-10-31 BZR 5243)-product   date = Sa 15 Nov 2014 21:28:51 CET
+Cmp-Mod V01 Created by Cvpcb (2014-10-31 BZR 5243)-product   date = So 16 Nov 2014 18:42:39 CET
 
 BeginCmp
 TimeStamp = /5462A945;
@@ -509,6 +509,13 @@ TimeStamp = /54629CF8;
 Reference = U6;
 ValeurCmp = OPA188;
 IdModule  = SMD_Packages:SSOP-8;
+EndCmp
+
+BeginCmp
+TimeStamp = /5468E7A2;
+Reference = U7;
+ValeurCmp = LM4040;
+IdModule  = SMD_Packages:SOT-23;
 EndCmp
 
 BeginCmp

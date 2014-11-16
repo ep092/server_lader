@@ -16,3 +16,6 @@
 *.brd
 *.kicad_pcb-bak
 *.gif
+
+#libre office
+.ods#
