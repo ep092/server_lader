@@ -39,5 +39,12 @@ Umbau auf eine ander overvoltage protection Spannung:
  Wenn man die bereits verbauten Widerstände misst kommt man auf 4,096 Ohm.
  Mit einem parallel geschaltenen 51,6k Ohm Widerstand kommt man so auf einen Widerstand von 3,79kOhm
  
+ -------------------------------------------------------------------
+ Änderungen für Hardwareversion 2
+ Footprint für Stecker anpassen
+ ISP-Stecker auf Unterseite der Platine verlegen
+ zusätzlicher Kondensator für AREF
+ Micromatch-Stecker auf Display Platine auf Unterseite verlegen
+ 
  
  
