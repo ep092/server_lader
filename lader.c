@@ -156,19 +156,16 @@ ISR(PCINT2_vect, ISR_BLOCK) {
 // ADC0 = uNetzteil, ADC1 = uReserve, ADC2 = strom
 // Die Werte können noch kalibriert werden, allerdings nicht zur Laufzeit.
 
-#define REFERENZ 5.1f				// hier noch auf Betriebsspannung des NT gesetzt
-#define NTCAL (REFERENZ/1024/0.076923)		// 1/13V/V vom Spannungsteiler
-#define RESCAL (REFERENZ/1024/1)		// ? vom Spannungsteiler
-#define ICAL (REFERENZ/1024/0.06)		// 60mV/A kommt vom Sensor
-#define MITTELWERTE 5
-volatile float uNetzteil=0, uReserve=0, strom=0;
+#define REFERENZ 4	// externe Referenz, 4096mV also 4mV pro STEP
+#define MITTELWERTE 4
+volatile uint16_t uNetzteil=0, uReserve=0, strom=0; // U in mV, I in mA
 
 ISR(ADC_vect, ISR_BLOCK) {
 	// ADC-Auslesungen und Rechnung mit Gleitmittelwert über 5 Werte
 	static uint16_t tabelle[3*MITTELWERTE]; // hier kommen die ADC-werte rein.
 	uint16_t temp=0;
 	tabelle[counter++] = ADC; // fülle Tabelle mit ADC-Werten
-	if (counter == 15) { // setze Counter zurück
+	if (counter == 3*MITTELWERTE) { // setze Counter zurück
 		counter = 0;
 	}
 	switch (counter%3) {
@@ -177,25 +174,23 @@ ISR(ADC_vect, ISR_BLOCK) {
 			for(uint8_t i=0; i<5; i++) {
 				temp += tabelle[0 + 3*i];
 			}
-			uNetzteil = ((float)temp*NTCAL/MITTELWERTE);
+			uNetzteil = ((temp*REFERENZ)<<2);
 		
 		case 1:
 			// uReserve wird ausgerechnet
 			for(uint8_t i=0; i<5; i++) {
 				temp += tabelle[1 + 3*i];
 			}
-			uReserve = ((float)temp*RESCAL/MITTELWERTE);
+			uReserve = ((temp*REFERENZ)<<2);
 		
 		case 2:
 			// strom wird ausgerechnet
 			for(uint8_t i=0; i<5; i++) {
 				temp += tabelle[2 + 3*i];
 			}
-			strom = ((float)temp*ICAL/MITTELWERTE);
+			strom = (uint16_t)((float)temp*((float)50/(float)3));
 	}
 }
-
-// Timer Interrupt, der den ADC steuert
 
 
 
@@ -230,6 +225,7 @@ int main(void) {
 	uartTxNewline();
 	
 	spi_write_string("   Guten Tag!     gebaut von   Philipp und Toni"); // Begrüßung
+	char display[49];
 	LED(1);
 	delayms(10000);
 	
@@ -238,7 +234,7 @@ int main(void) {
 	sei(); // und es seien Interrupts (aktiv)!
 	
 	while(1) {
-		// Regelung einfügen.
+		sprintf()
 	}
 	return 0;
 }
