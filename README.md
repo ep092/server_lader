@@ -41,9 +41,13 @@ Umbau auf eine ander overvoltage protection Spannung:
  
  -------------------------------------------------------------------
  Änderungen für Hardwareversion 2
+ 
  Footprint für Stecker anpassen
+ 
  ISP-Stecker auf Unterseite der Platine verlegen
+ 
  zusätzlicher Kondensator für AREF
+ 
  Micromatch-Stecker auf Display Platine auf Unterseite verlegen
  
  
