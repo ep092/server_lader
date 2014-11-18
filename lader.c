@@ -225,16 +225,109 @@ int main(void) {
 	uartTxNewline();
 	
 	spi_write_string("   Guten Tag!     gebaut von   Philipp und Toni"); // Begrüßung
-	char display[49];
+	char display[17];
 	LED(1);
 	delayms(10000);
 	
 	uint16_t sollspannung=30000, maximalstrom=10000; // Spannung in Millivolt, Strom in Milliampere
+	uint16_t tempspannung=0, tempstrom=0; // werte, die der Regler verändern kann.
+	// unabhängig von denen, die der User eingibt (maximalwerte)
+	
+	uint8_t status=0; // Statusvariabel für den Automaten
 	
 	sei(); // und es seien Interrupts (aktiv)!
 	
+	SPKR(1);
+	delayms(100);
+	SPKR(0);
+	
+	spi_write_string("  NUR ANZEIGE!  ");
 	while(1) {
-		sprintf()
+		display_set_row(1);
+		sprintf(display, "Uout: %umV", uNetzteil); // Netzteilspannung
+		spi_write_string(display);
+		
+		display_set_row(2);
+		sprintf(display, "Uout: %umV", strom); // Laststrom
+		spi_write_string(display);
+	}
+	
+	while(1) {
+		if (status == 0) { // init state: Netzteil Ausgang AUS
+			display_set_row(0);
+			spi_write_string("Netzteil INAKTIV");
+			uartTxStrln("NT aus");
+			NT_ON(0);
+			LED(0);
+		}
+		if (knopf & 1) { // wechsle in status
+			if (status == 0) {
+				status = 1;
+			} else if (status == 2) {
+				setPowerOutput(sollspannung);
+				NT_ON(1); // aktiviere netzteil
+				LED(1);
+				status = 3
+			}
+		}
+		if (status == 1) { // spannung einstellen
+			display_set_row(0);
+			spi_write_string("U_soll stellen..");
+			uartTxStrln("U stellen");
+			status = 2;
+		}
+		if (status == 3) { // strom einstellen
+			display_set_row(0);
+			spi_write_string("I_max stellen..");
+			uartTxStrln("I stellen");
+			status = 4;
+		}
+		if ((knopf & 1<<2) || (knopf & 1<<3)) { // knopf gedreht um 1 nach rechts oder links
+			if (status == 2) { // spannung verstellen
+				display_set_row(1);
+				spi_write_string("Sollspannung:   ");
+				if (knopf & 1<<2) { // Knopf rechts gedreht
+					if(sollspannung<60000) {
+						sollspannung = sollspannung+100; // +100mV
+					}
+				} else if (knopf & 1<<3) { // Knopf links gedreht
+					if(sollspannung>12000) {
+						sollspannung = sollspannung-100; // -100mV
+					}
+				}
+				display_set_row(3);
+				sprintf(display, "Uout: %umV", sollspannung); // Sollspannung neu
+				spi_write_string(display);
+			}
+			if (status == 4) {
+				display_set_row(1);
+				spi_write_string("Maximalstrom:   ");
+				if (knopf & 1<<2) { // Knopf rechts gedreht
+					if(maximalstrom<55000) {
+						maximalstrom = maximalstrom+100; // +100mV
+					}
+				} else if (knopf & 1<<3) { // Knopf links gedreht
+					if(maximalstrom>0) {
+						maximalstrom = maximalstrom-100; // -100mV
+					}
+				}
+				display_set_row(3);
+				sprintf(display, "Umax: %umA", maximalstrom); // Sollspannung neu
+				spi_write_string(display);
+			}
+		}
+		if (status == 42) { // regler läuft.
+			// Regler läuft.
+			if (strom > maximalstrom) {
+				tempspannung--;
+			}
+			if (strom < maximalstrom) {
+				if (tempspannung < sollspannung) {
+					tempspannung++;
+				}
+			}
+			setPowerOutput(tempspannung);
+		}
 	}
 	return 0;
 }
