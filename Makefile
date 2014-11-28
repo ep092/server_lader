@@ -39,12 +39,12 @@
 
 
 # MCU name
-MCU = atmega328
+MCU = atmega328p
 
 # Main Oscillator Frequency
 # This is only used to define F_OSC in all assembler and c-sources.
-F_OSC = 16000000
-F_CPU = 16000000
+F_OSC = 8000000
+F_CPU = 8000000
 # Output format. (can be srec, ihex, binary)
 FORMAT = ihex
 
@@ -184,7 +184,7 @@ LDFLAGS += $(PRINTF_LIB) $(SCANF_LIB) $(MATH_LIB)
 #
 
 #ponyprog seriell,
-AVRDUDE_PROGRAMMER = avrispmk2
+AVRDUDE_PROGRAMMER = avrisp2
 
 # com1 = serial port. Use lpt1 to connect to parallel port.
 AVRDUDE_PORT = usb

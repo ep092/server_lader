@@ -25,6 +25,7 @@
  */
 
 #include <avr/interrupt.h>
+#include <stdio.h>
 
 #include "../AtmelLib/global.h"
 #include "../AtmelLib/io/io.h"
@@ -81,16 +82,19 @@ void dacSetValue(uint16_t wert, uint8_t mode) {
 	SPCR = tempspcr;
 }
 
-#define RFB 1
-#define RG1 1
-#define RG2 1
+#define RFB 10000
+#define RG1 3300
+#define RG2 10000
 #define DAC_REF 2.5
 #define UMAX 61000
 #define T 55.44
 #define M -4.9
 
-#define K1 1+((float)RFB/(float)RG2)+((float)RFB/(float)RG1)
-#define K2 ((float)RFB/(float)RG2)*DAC_REF
+// K1 1+((float)RFB/(float)RG2)+((float)RFB/(float)RG1) // K1 = 5,0303
+// K2 ((float)RFB/(float)RG2)*DAC_REF // K2 = 2,5
+
+#define K1 5.0303
+#define K2 2.5
 
 void setPowerOutput(uint16_t millivolt) {
 	if (millivolt<UMAX) { // Schutz vor Überspannung
@@ -164,35 +168,34 @@ ISR(ADC_vect, ISR_BLOCK) {
 	// ADC-Auslesungen und Rechnung mit Gleitmittelwert über 5 Werte
 	static uint16_t tabelle[3*MITTELWERTE]; // hier kommen die ADC-werte rein.
 	uint16_t temp=0;
-	tabelle[counter++] = ADC; // fülle Tabelle mit ADC-Werten
+	tabelle[counter] = ADC; // fülle Tabelle mit ADC-Werten
+	counter++;
 	if (counter == 3*MITTELWERTE) { // setze Counter zurück
 		counter = 0;
 	}
 	switch (counter%3) {
 		case 0:
 			// uNetzteil wird ausgerechnet
-			for(uint8_t i=0; i<5; i++) {
+			for(uint8_t i=0; i<MITTELWERTE; i++) {
 				temp += tabelle[0 + 3*i];
 			}
 			uNetzteil = ((temp*REFERENZ)<<2);
 		
 		case 1:
 			// uReserve wird ausgerechnet
-			for(uint8_t i=0; i<5; i++) {
+			for(uint8_t i=0; i<MITTELWERTE; i++) {
 				temp += tabelle[1 + 3*i];
 			}
 			uReserve = ((temp*REFERENZ)<<2);
 		
 		case 2:
 			// strom wird ausgerechnet
-			for(uint8_t i=0; i<5; i++) {
+			for(uint8_t i=0; i<MITTELWERTE; i++) {
 				temp += tabelle[2 + 3*i];
 			}
 			strom = (uint16_t)((float)temp*((float)50/(float)3));
 	}
 }
-
-
 
 int main(void) {
 	DDRB  = 1<<PB0 | 1<<PB2 | 1<<PB3 | 1<<PB5;
@@ -218,16 +221,19 @@ int main(void) {
 	spiInit();
 	SS_DAC(1); // CS vom DAC ist idle high
 	DOGM163_init(); // 3x16 Zeichen reflexives LCD
+	display_clear();
+	display_return_home();
+	delayms(100);
 	
 	uartTxStrln("Guten Tag!");
 	uartTxStrln("REICH TIME");
 	uartTxNewline();
 	uartTxNewline();
 	
-	spi_write_string("   Guten Tag!     gebaut von   Philipp und Toni"); // Begrüßung
+	spi_write_string("   Guten Tag!     gebaut von    Toni und Philipp"); // Begrüßung
 	char display[17];
 	LED(1);
-	delayms(10000);
+	delayms(1000);
 	
 	uint16_t sollspannung=30000, maximalstrom=10000; // Spannung in Millivolt, Strom in Milliampere
 	uint16_t tempspannung=0, tempstrom=0; // werte, die der Regler verändern kann.
@@ -241,8 +247,19 @@ int main(void) {
 	delayms(100);
 	SPKR(0);
 	
-	spi_write_string("  NUR ANZEIGE!  ");
+	setPowerOutput(24000);
+	
+// 	while(1) {
+// 		DOGM163_init(); // 3x16 Zeichen reflexives LCD
+// 		display_clear();
+// 		display_return_home();
+// 		spi_write_string("Hodenkobold");
+// 	}
+	
 	while(1) {
+		display_clear();
+		spi_write_string("  NUR ANZEIGE!  ");
+		
 		display_set_row(1);
 		sprintf(display, "Uout: %umV", uNetzteil); // Netzteilspannung
 		spi_write_string(display);
@@ -250,6 +267,8 @@ int main(void) {
 		display_set_row(2);
 		sprintf(display, "Uout: %umV", strom); // Laststrom
 		spi_write_string(display);
+		
+		delayms(10);
 	}
 	
 	while(1) {
@@ -267,7 +286,7 @@ int main(void) {
 				setPowerOutput(sollspannung);
 				NT_ON(1); // aktiviere netzteil
 				LED(1);
-				status = 3
+				status = 3;
 			}
 		}
 		if (status == 1) { // spannung einstellen
