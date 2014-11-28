@@ -40,7 +40,7 @@ uint8_t ERR=0;
 
 // UART: 19200 Baud, 1 Stopbit, no Parity, 8 Bit/frame
 #define UBRRH_VALUE 0
-#define UBRRL_VALUE 51
+#define UBRRL_VALUE 25
 #include "../AtmelLib/io/serial/uart.h"
 
 #define DISPLAY_RS_DDR   DDRD
@@ -58,8 +58,8 @@ uint8_t ERR=0;
 #define SS_DAC(x) out(PORTB,PB2,0,x)
 
 void adcInit(void) {
-	ADMUX = 1<<REFS0; // Referenz auf Vcc
-	ADCSRA = 1<<ADEN | 1<<ADSC | 1<<ADIF | 5<<ADPS0; // ADC an, Interrupt an, Prescaler=128
+	ADMUX = 0; // Referenz auf externe Referenz
+	ADCSRA = 1<<ADEN | 1<<ADSC | 1<<ADIE | 5<<ADPS0; // ADC an, Interrupt an, Prescaler=128
 	ADCSRB = 0; // nicht verwendet.
 }
 
@@ -109,15 +109,17 @@ void timerInit(void) {
 	// Timer/Counter1 im CTC modus verwenden. alle 10ms ein Interrupt
 	TCCR1A = 0; // CTC (mode 4)
 	TCCR1B = 1<<WGM12 | 1<<CS11 | 1<<CS10; // CTC (mode 4), Prescaler = 64 -> 4µs pro Timerschritt
+	TIMSK1 = 1<<OCIE1A; // Interrupt on compare match
 	OCR1A  = 2500; // TOP und Interrupt alle 10ms
 }
 
 // Der ADC wird interruptgesteuert
 volatile uint8_t counter = 0;
-ISR(TIMER1_OVF_vect, ISR_BLOCK) {
+ISR(TIMER1_COMPA_vect, ISR_BLOCK) {
+// 	uartTxStrln("timer");
 	ADMUX = ADMUX & 0b11100000; // lösche selektiv die MUX-Bits
 	ADMUX |= (counter%3); // setze ADC-Kanal neu
-	ADCSRA |= 1<<ADC; // start conversion
+	ADCSRA |= 1<<ADSC; // start conversion
 }
 
 
@@ -165,6 +167,7 @@ ISR(PCINT2_vect, ISR_BLOCK) {
 volatile uint16_t uNetzteil=0, uReserve=0, strom=0; // U in mV, I in mA
 
 ISR(ADC_vect, ISR_BLOCK) {
+// 	uartTxStrln("adc");
 	// ADC-Auslesungen und Rechnung mit Gleitmittelwert über 5 Werte
 	static uint16_t tabelle[3*MITTELWERTE]; // hier kommen die ADC-werte rein.
 	uint16_t temp=0;
@@ -220,9 +223,11 @@ int main(void) {
 	timerInit();
 	spiInit();
 	SS_DAC(1); // CS vom DAC ist idle high
-	DOGM163_init(); // 3x16 Zeichen reflexives LCD
+	for(uint8_t i=0; i<3; i++) { // Display braucht noch mehrere Anläufe :D
+	DOGM163_init();
 	display_clear();
 	display_return_home();
+	}
 	delayms(100);
 	
 	uartTxStrln("Guten Tag!");
@@ -265,10 +270,10 @@ int main(void) {
 		spi_write_string(display);
 		
 		display_set_row(2);
-		sprintf(display, "Uout: %umV", strom); // Laststrom
+		sprintf(display, "Iout: %umA", strom); // Laststrom
 		spi_write_string(display);
 		
-		delayms(10);
+		delayms(100);
 	}
 	
 	while(1) {
