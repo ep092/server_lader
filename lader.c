@@ -52,11 +52,68 @@ uint8_t ERR=0;
 #define DISPLAY_CSB_PIN  PD6
 #include "EA_DOGM163L-A-Atmel-Lib/EA_DOGM163L-A.c"
 
-
 #define LED(x) out(PORTC,PC3,0,x)
 #define NT_ON(x) out(PORTB,PB0,0,x)
 #define SPKR(x) out(PORTD,PD7,0,x)
 #define SS_DAC(x) out(PORTB,PB2,0,x)
+
+#define B_KNOPF_LOSGELASSEN (knopf & 1) 
+#define RESET_KNOPF_LOSGELASSEN cbi(knopf, 1) 
+#define B_KNOPF_GEDRUECKT ((knopf >> 1) & 1) 
+#define RESET_KNOPF_GEDRUECKT cbi(knopf, 1) 
+#define B_STEP_LINKS ((knopf >>3) & 1) 
+#define RESET_STEP_LINKS cbi(knopf, 3) 
+#define B_STEP_RECHTS ((knopf >>2) & 1) 
+#define RESET_STEP_RECHTS cbi(knopf, 2) 
+
+typedef enum {
+	INIT_STATE, AUSWAHL, MODUS_LADER, MODUS_NETZGERAET, REGELUNG_NETZGERAET,
+	SPANNUNGSEINSTELLUNG, STROMEINSTELLUNG, ZAHLENWERT_AENDERN,
+	LADEN_AKTIV, LADUNG_FERTIG, ERROR_STATE
+}state_main;
+
+typedef enum {
+	LADESCHLUSSSPANNUNG, MAXIMALSTROM, STROM_ENDE, START, ZURUECK
+} state_modus_lader;
+
+state_main state = INIT_STATE;
+state_modus_lader state_lader = LADESCHLUSSSPANNUNG;
+
+uint16_t netzgeraet_spannung = 32000;
+uint16_t netzgeraet_strom = 12000;
+
+uint16_t modus_lader_ladeschlussspannung = 59000;
+uint16_t modus_lader_maximalstrom = 5000;
+uint16_t modus_lader_strom_ende = 300;
+
+volatile uint8_t knopf=0;
+// knopf-Datentyp:	7:0 		6:0 		5:STEP_TEMP_LINKS 	4:STEP_TEMP_RECHTS
+//			3:STEP_LINKS 	2:STEP_RECHTS 	1:KNOPF-GEDRÜCKT 	0:KNOPF-LOSGELASSEN
+// Drehung Pin 1
+
+uint8_t knopf_losgelassen(void) {
+	uint8_t return_value = B_KNOPF_LOSGELASSEN;
+	RESET_KNOPF_LOSGELASSEN;
+	return return_value;
+}
+
+uint8_t knopf_gedrueckt(void) {
+	uint8_t return_value = B_KNOPF_GEDRUECKT;
+	RESET_KNOPF_GEDRUECKT;
+	return return_value;
+}
+
+uint8_t step_links(void) {
+	uint8_t return_value = B_STEP_LINKS;
+	RESET_STEP_LINKS;
+	return return_value;
+}
+
+uint8_t step_rechts(void) {
+	uint8_t return_value = B_STEP_RECHTS;
+	RESET_STEP_RECHTS;
+	return return_value;
+}
 
 void adcInit(void) {
 	ADMUX = 0; // Referenz auf externe Referenz
@@ -125,10 +182,6 @@ ISR(TIMER1_COMPA_vect, ISR_BLOCK) {
 
 
 // Drehrad Interrupts
-volatile uint8_t knopf=0;
-// knopf-Datentyp:	7:0 		6:0 		5:STEP_TEMP_LINKS 	4:STEP_TEMP_RECHTS
-//			3:STEP_LINKS 	2:STEP_RECHTS 	1:KNOPF-GEDRÜCKT 	0:KNOPF-LOSGELASSEN
-// Drehung Pin 1
 ISR(INT0_vect, ISR_BLOCK) {
 	if(knopf & 1<<5) { // knopf wurde eins nach links gedreht
 		sbi(knopf, 3);
@@ -201,6 +254,200 @@ ISR(ADC_vect, ISR_BLOCK) {
 	}
 }
 
+uint16_t spannungseinstellung(uint16_t spannung){
+}
+
+uint16_t stromeinstellung(uint16_t strom){
+}
+
+void netzteil_regulation(uint16_t spannung, uint16_t strom){
+}
+
+
+void stateMachine(void) {
+	while (1){
+		switch (state) {
+			case INIT_STATE:
+				uartTxStrln("INIT_STATE");
+				spi_write_string("   Guten Tag!     gebaut von    Toni und Philipp"); // Begrüßung
+				while (knopf_losgelassen() != 1) {
+				}
+				state = AUSWAHL;
+				//      if (knopf_losgelassen()) state=AUSWAHL;
+				break;
+				
+			case AUSWAHL:
+				uartTxStrln("AUSWAHL");
+				static uint8_t auswahl = 0; //0=LADER; 1=NETZTEIL
+				if (step_links() && (auswahl != 0)) {
+					auswahl--;
+				} else if( step_rechts() && (auswahl != MODUS_NETZGERAET)) {
+					auswahl++;
+				}
+				if (knopf_losgelassen()) {
+					if (auswahl==0) {
+						state=MODUS_LADER;
+						break;
+					} else if (auswahl==1) {
+						state=MODUS_NETZGERAET;
+						break;
+					}
+					display_clear();
+					spi_write_string("Auswahl");
+					display_set_row(1);
+					if (auswahl==0) {
+						spi_write_string("Lader");
+					} else if (auswahl==1) {
+						spi_write_string("NETZTEIL");
+					}
+					delayms(100);
+				}
+				break;
+				
+			case MODUS_LADER:
+				uartTxStrln("MODUS_LADER");
+				if (step_links() && (state_lader != 0)) {
+					state_lader--;
+				} else if( step_rechts() && (state_lader != ZURUECK)) {
+					state_lader++;
+				}
+				delayms(100);
+				display_clear();
+				spi_write_string("Modus: Lader");
+				display_set_row(1);
+				switch(state_lader) {
+					case LADESCHLUSSSPANNUNG:
+						spi_write_string("Ladeschlussspannung");
+						if (knopf_losgelassen()) {
+							modus_lader_ladeschlussspannung = spannungseinstellung(modus_lader_ladeschlussspannung);
+						}
+						break;
+						
+					case MAXIMALSTROM:
+						spi_write_string("Maximalstrom");
+						if (knopf_losgelassen()) {
+							modus_lader_maximalstrom = stromeinstellung(modus_lader_maximalstrom);
+						}
+						break;
+						
+					case STROM_ENDE:
+						spi_write_string("Abschaltstrom");
+						if (knopf_losgelassen()) {
+							modus_lader_strom_ende = stromeinstellung(modus_lader_strom_ende);
+						}
+						break;
+						
+					case START:
+						spi_write_string("Start");
+						if (knopf_losgelassen()) {
+							state = LADEN_AKTIV;
+						}
+						break;
+						
+					case ZURUECK:
+						spi_write_string("Zurück");
+						if (knopf_losgelassen()) {
+							state = AUSWAHL;
+						}
+						break;
+				}
+				break;
+				
+			case MODUS_NETZGERAET:
+				uartTxStrln("MODUS_NETZGERÄT");
+				static uint8_t modus_netzgeraet_auswahl = 0; //0=Spannung; 1=Maximalstrom; 2=start; 3=zurück
+				delayms(100);
+				display_clear();
+				spi_write_string("Modus: Netzgerät");
+				display_set_row(1);
+				if (step_links() && (modus_netzgeraet_auswahl != 0)) {
+					modus_netzgeraet_auswahl--;
+				} else if( step_rechts() && (modus_netzgeraet_auswahl != 3)) {
+					modus_netzgeraet_auswahl++;
+				}
+				switch (modus_netzgeraet_auswahl) {
+					case 0:
+						spi_write_string("Spannung");
+						if (knopf_losgelassen()) {
+							netzgeraet_spannung = spannungseinstellung(netzgeraet_spannung);
+						}
+						break;
+						
+					case 1:
+						spi_write_string("Strom");
+						if (knopf_losgelassen()) {
+							netzgeraet_strom=stromeinstellung(netzgeraet_strom);
+						}
+						break;
+						
+					case 2:
+						spi_write_string("Start");
+						if (knopf_losgelassen()) {
+							netzteil_regulation(netzgeraet_spannung, netzgeraet_strom);
+						}
+						break;
+						
+					case 3:
+						spi_write_string("zurück");
+						if (knopf_losgelassen()) {
+							state = AUSWAHL;
+						}
+						break;
+				}
+				
+				break;
+				
+			case REGELUNG_NETZGERAET:
+				uartTxStrln("REGELUNG_NETZGERÄT");
+				if (knopf_losgelassen()) {
+					state=MODUS_NETZGERAET;
+				}
+				
+				break;
+				
+				//in Funktionen ausgelagert
+				/*      
+				 *   case SPANNUNGSEINSTELLUNG:
+				 *     break; 
+				 * 
+				 *   case STROMEINSTELLUNG:
+				 *     break; 
+				 * 
+				 *   case ZAHLENWERT_AENDERN:
+				 *     break; */
+				
+				case LADEN_AKTIV:
+					uartTxStrln("LADEN_AKTIV");
+					display_clear();
+					spi_write_string("Laden aktiv");
+					if (knopf_losgelassen()) {
+						state = MODUS_LADER;
+					}
+					//TODO jump to ERROR_STATE; LADUNG_FERTIG
+					break;
+					
+				case LADUNG_FERTIG:
+					uartTxStrln("LADUNG_FERTIG");
+					display_clear();
+					spi_write_string("Laden fertig");
+					if (knopf_losgelassen()) {
+						state = MODUS_LADER;
+					}
+					break;
+					
+				case ERROR_STATE:
+					uartTxStrln("ERROR_STATE");
+					display_clear();
+					spi_write_string("Error");
+					if (knopf_losgelassen()) {
+						state = AUSWAHL;
+					}
+					break;
+					
+		}	
+	}
+}
+
 int main(void) {
 	DDRB  = 1<<PB0 | 1<<PB2 | 1<<PB3 | 1<<PB5;
 	DDRC  = 1<<PC3 | 1<<PC5;
@@ -262,6 +509,7 @@ int main(void) {
 	// 		spi_write_string("Hodenkobold");
 	// 	}
 	
+	stateMachine();
 	return 0;
 }
 /*
