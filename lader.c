@@ -66,6 +66,8 @@ uint8_t ERR=0;
 #define B_STEP_RECHTS ((knopf >>2) & 1) 
 #define RESET_STEP_RECHTS cbi(knopf, 2) 
 
+#define STROMOFFSET 593 //TODO automatische Kalibrierung
+
 typedef enum {
 	INIT_STATE, AUSWAHL, MODUS_LADER, MODUS_NETZGERAET, REGELUNG_NETZGERAET,
 	SPANNUNGSEINSTELLUNG, STROMEINSTELLUNG, ZAHLENWERT_AENDERN,
@@ -85,6 +87,9 @@ uint16_t netzgeraet_strom = 12000;
 uint16_t modus_lader_ladeschlussspannung = 59000;
 uint16_t modus_lader_maximalstrom = 5000;
 uint16_t modus_lader_strom_ende = 300;
+
+char display[17];
+
 
 volatile uint8_t knopf=0;
 // knopf-Datentyp:	7:0 		6:0 		5:STEP_TEMP_LINKS 	4:STEP_TEMP_RECHTS
@@ -242,10 +247,7 @@ ISR(ADC_vect, ISR_BLOCK) {
 	static uint16_t tabelle[3*MITTELWERTE]; // hier kommen die ADC-werte rein.
 	uint16_t temp=0;
 	tabelle[counter] = ADC; // fülle Tabelle mit ADC-Werten
-	counter++;
-	if (counter == 3*MITTELWERTE) { // setze Counter zurück
-		counter = 0;
-	}
+
 	switch (counter%3) {
 		case 0:
 			// uNetzteil wird ausgerechnet
@@ -253,6 +255,7 @@ ISR(ADC_vect, ISR_BLOCK) {
 				temp += tabelle[0 + 3*i];
 			}
 			uNetzteil = ((temp*REFERENZ)<<2);
+			break;
 			
 		case 1:
 			// uReserve wird ausgerechnet
@@ -260,17 +263,37 @@ ISR(ADC_vect, ISR_BLOCK) {
 				temp += tabelle[1 + 3*i];
 			}
 			uReserve = ((temp*REFERENZ)<<2);
+			break;
 			
 		case 2:
 			// strom wird ausgerechnet
 			for(uint8_t i=0; i<MITTELWERTE; i++) {
 				temp += tabelle[2 + 3*i];
 			}
+			temp -= STROMOFFSET;
+			//strom=temp;
+			//strom=tabelle[2]+tabelle[5]+tabelle[8]+tabelle[11];
 			strom = (uint16_t)((float)temp*((float)50/(float)3));
+			break;
+	}
+	counter++;
+	if (counter == 3*MITTELWERTE) { // setze Counter zurück
+		counter = 0;
 	}
 }
 
 uint16_t spannungseinstellung(uint16_t spannung){
+	while(knopf_losgelassen()!=1){
+		sprintf(display, "Uout: %5umV ", spannung);
+		display_set_row(2);
+		spi_write_string(display);
+		if (step_links()){
+			spannung -=100;
+		}else if (step_rechts()){
+			spannung += 100;
+		}//TODO overflow
+	}
+	return spannung;
 }
 
 uint16_t stromeinstellung(uint16_t strom){
@@ -281,7 +304,6 @@ void netzteil_regulation(uint16_t spannung, uint16_t strom){
 
 
 void stateMachine(void) {
-	char display[17];
 	while (1){
 		switch (state) {
 			case INIT_STATE:
@@ -422,10 +444,10 @@ void stateMachine(void) {
 			case REGELUNG_NETZGERAET:
 				uartTxStrln("REGELUNG_NETZGERÄT");
 					display_set_row(1);
-					sprintf(display, "Uout: %umV ", uNetzteil); // Netzteilspannung
+					sprintf(display, "Uout: %5umV ", uNetzteil); // Netzteilspannung
 					spi_write_string(display);
 					display_set_row(2);
-					sprintf(display, "Iout: %umA ", strom); // Laststrom
+					sprintf(display, "Iout: %5umA ", strom); // Laststrom
 					spi_write_string(display);
 					netzteil_regulation(netzgeraet_spannung, netzgeraet_strom);
 				if (knopf_losgelassen()) {
