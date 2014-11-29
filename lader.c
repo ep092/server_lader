@@ -58,7 +58,7 @@ uint8_t ERR=0;
 #define SS_DAC(x) out(PORTB,PB2,0,x)
 
 #define B_KNOPF_LOSGELASSEN (knopf & 1) 
-#define RESET_KNOPF_LOSGELASSEN cbi(knopf, 1) 
+#define RESET_KNOPF_LOSGELASSEN cbi(knopf, 0) 
 #define B_KNOPF_GEDRUECKT ((knopf >> 1) & 1) 
 #define RESET_KNOPF_GEDRUECKT cbi(knopf, 1) 
 #define B_STEP_LINKS ((knopf >>3) & 1) 
@@ -281,27 +281,29 @@ void stateMachine(void) {
 				static uint8_t auswahl = 0; //0=LADER; 1=NETZTEIL
 				if (step_links() && (auswahl != 0)) {
 					auswahl--;
-				} else if( step_rechts() && (auswahl != MODUS_NETZGERAET)) {
+				} else if( step_rechts() && (auswahl != 1)) {
 					auswahl++;
 				}
 				if (knopf_losgelassen()) {
 					if (auswahl==0) {
 						state=MODUS_LADER;
+//						auswahl=0;
 						break;
 					} else if (auswahl==1) {
 						state=MODUS_NETZGERAET;
+//						auswahl=0;
 						break;
 					}
-					display_clear();
-					spi_write_string("Auswahl");
-					display_set_row(1);
-					if (auswahl==0) {
-						spi_write_string("Lader");
-					} else if (auswahl==1) {
-						spi_write_string("NETZTEIL");
-					}
-					delayms(100);
 				}
+				display_clear();
+				spi_write_string("Auswahl");
+				display_set_row(1);
+				if (auswahl==0) {
+					spi_write_string("Lader");
+				} else if (auswahl==1) {
+					spi_write_string("Netzteil");
+				}
+				delayms(100);
 				break;
 				
 			case MODUS_LADER:
@@ -340,6 +342,7 @@ void stateMachine(void) {
 					case START:
 						spi_write_string("Start");
 						if (knopf_losgelassen()) {
+							state_lader=0;
 							state = LADEN_AKTIV;
 						}
 						break;
@@ -347,6 +350,7 @@ void stateMachine(void) {
 					case ZURUECK:
 						spi_write_string("Zurück");
 						if (knopf_losgelassen()) {
+							state_lader=0;
 							state = AUSWAHL;
 						}
 						break;
@@ -390,6 +394,7 @@ void stateMachine(void) {
 					case 3:
 						spi_write_string("zurück");
 						if (knopf_losgelassen()) {
+							modus_netzgeraet_auswahl=0;
 							state = AUSWAHL;
 						}
 						break;
