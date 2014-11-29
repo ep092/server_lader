@@ -91,9 +91,15 @@ volatile uint8_t knopf=0;
 //			3:STEP_LINKS 	2:STEP_RECHTS 	1:KNOPF-GEDRÜCKT 	0:KNOPF-LOSGELASSEN
 // Drehung Pin 1
 
+
 uint8_t knopf_losgelassen(void) {
 	uint8_t return_value = B_KNOPF_LOSGELASSEN;
 	RESET_KNOPF_LOSGELASSEN;
+	if(return_value){
+		SPKR(1);
+		delayms(10);
+		SPKR(0);
+	}
 	return return_value;
 }
 
@@ -106,12 +112,22 @@ uint8_t knopf_gedrueckt(void) {
 uint8_t step_links(void) {
 	uint8_t return_value = B_STEP_LINKS;
 	RESET_STEP_LINKS;
+	if(return_value){
+		SPKR(1);
+		delayms(10);
+		SPKR(0);
+	}
 	return return_value;
 }
 
 uint8_t step_rechts(void) {
 	uint8_t return_value = B_STEP_RECHTS;
 	RESET_STEP_RECHTS;
+	if(return_value){
+		SPKR(1);
+		delayms(10);
+		SPKR(0);
+	}
 	return return_value;
 }
 
@@ -265,6 +281,7 @@ void netzteil_regulation(uint16_t spannung, uint16_t strom){
 
 
 void stateMachine(void) {
+	char display[17];
 	while (1){
 		switch (state) {
 			case INIT_STATE:
@@ -387,7 +404,7 @@ void stateMachine(void) {
 					case 2:
 						spi_write_string("Start");
 						if (knopf_losgelassen()) {
-							netzteil_regulation(netzgeraet_spannung, netzgeraet_strom);
+							state = REGELUNG_NETZGERAET;
 						}
 						break;
 						
@@ -404,10 +421,17 @@ void stateMachine(void) {
 				
 			case REGELUNG_NETZGERAET:
 				uartTxStrln("REGELUNG_NETZGERÄT");
+					display_set_row(1);
+					sprintf(display, "Uout: %umV ", uNetzteil); // Netzteilspannung
+					spi_write_string(display);
+					display_set_row(2);
+					sprintf(display, "Iout: %umA ", strom); // Laststrom
+					spi_write_string(display);
+					netzteil_regulation(netzgeraet_spannung, netzgeraet_strom);
 				if (knopf_losgelassen()) {
 					state=MODUS_NETZGERAET;
 				}
-				
+				delayms(1000);				
 				break;
 				
 				//in Funktionen ausgelagert
@@ -421,34 +445,34 @@ void stateMachine(void) {
 				 *   case ZAHLENWERT_AENDERN:
 				 *     break; */
 				
-				case LADEN_AKTIV:
-					uartTxStrln("LADEN_AKTIV");
-					display_clear();
-					spi_write_string("Laden aktiv");
-					if (knopf_losgelassen()) {
-						state = MODUS_LADER;
-					}
-					//TODO jump to ERROR_STATE; LADUNG_FERTIG
-					break;
-					
-				case LADUNG_FERTIG:
-					uartTxStrln("LADUNG_FERTIG");
-					display_clear();
-					spi_write_string("Laden fertig");
-					if (knopf_losgelassen()) {
-						state = MODUS_LADER;
-					}
-					break;
-					
-				case ERROR_STATE:
-					uartTxStrln("ERROR_STATE");
-					display_clear();
-					spi_write_string("Error");
-					if (knopf_losgelassen()) {
-						state = AUSWAHL;
-					}
-					break;
-					
+			case LADEN_AKTIV:
+				uartTxStrln("LADEN_AKTIV");
+				display_clear();
+				spi_write_string("Laden aktiv");
+				if (knopf_losgelassen()) {
+					state = MODUS_LADER;
+				}
+				//TODO jump to ERROR_STATE; LADUNG_FERTIG
+				break;
+				
+			case LADUNG_FERTIG:
+				uartTxStrln("LADUNG_FERTIG");
+				display_clear();
+				spi_write_string("Laden fertig");
+				if (knopf_losgelassen()) {
+					state = MODUS_LADER;
+				}
+				break;
+				
+			case ERROR_STATE:
+				uartTxStrln("ERROR_STATE");
+				display_clear();
+				spi_write_string("Error");
+				if (knopf_losgelassen()) {
+					state = AUSWAHL;
+				}
+				break;
+				
 		}	
 	}
 }
@@ -489,7 +513,6 @@ int main(void) {
 	uartTxNewline();
 	
 	spi_write_string("   Guten Tag!     gebaut von    Toni und Philipp"); // Begrüßung
-	char display[17];
 	LED(1);
 	delayms(1000);
 	
