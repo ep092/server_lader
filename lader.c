@@ -25,6 +25,7 @@
  */
 
 #include <avr/interrupt.h>
+#include <avr/io.h>
 #include <stdio.h>
 
 #include "../AtmelLib/global.h"
@@ -116,7 +117,7 @@ void timerInit(void) {
 // Der ADC wird interruptgesteuert
 volatile uint8_t counter = 0;
 ISR(TIMER1_COMPA_vect, ISR_BLOCK) {
-// 	uartTxStrln("timer");
+	// 	uartTxStrln("timer");
 	ADMUX = ADMUX & 0b11100000; // lösche selektiv die MUX-Bits
 	ADMUX |= (counter%3); // setze ADC-Kanal neu
 	ADCSRA |= 1<<ADSC; // start conversion
@@ -167,7 +168,7 @@ ISR(PCINT2_vect, ISR_BLOCK) {
 volatile uint16_t uNetzteil=0, uReserve=0, strom=0; // U in mV, I in mA
 
 ISR(ADC_vect, ISR_BLOCK) {
-// 	uartTxStrln("adc");
+	// 	uartTxStrln("adc");
 	// ADC-Auslesungen und Rechnung mit Gleitmittelwert über 5 Werte
 	static uint16_t tabelle[3*MITTELWERTE]; // hier kommen die ADC-werte rein.
 	uint16_t temp=0;
@@ -183,14 +184,14 @@ ISR(ADC_vect, ISR_BLOCK) {
 				temp += tabelle[0 + 3*i];
 			}
 			uNetzteil = ((temp*REFERENZ)<<2);
-		
+			
 		case 1:
 			// uReserve wird ausgerechnet
 			for(uint8_t i=0; i<MITTELWERTE; i++) {
 				temp += tabelle[1 + 3*i];
 			}
 			uReserve = ((temp*REFERENZ)<<2);
-		
+			
 		case 2:
 			// strom wird ausgerechnet
 			for(uint8_t i=0; i<MITTELWERTE; i++) {
@@ -224,9 +225,9 @@ int main(void) {
 	spiInit();
 	SS_DAC(1); // CS vom DAC ist idle high
 	for(uint8_t i=0; i<3; i++) { // Display braucht noch mehrere Anläufe :D
-	DOGM163_init();
-	display_clear();
-	display_return_home();
+		DOGM163_init();
+		display_clear();
+		display_return_home();
 	}
 	delayms(100);
 	
@@ -254,104 +255,106 @@ int main(void) {
 	
 	setPowerOutput(24000);
 	
-// 	while(1) {
-// 		DOGM163_init(); // 3x16 Zeichen reflexives LCD
-// 		display_clear();
-// 		display_return_home();
-// 		spi_write_string("Hodenkobold");
-// 	}
+	// 	while(1) {
+	// 		DOGM163_init(); // 3x16 Zeichen reflexives LCD
+	// 		display_clear();
+	// 		display_return_home();
+	// 		spi_write_string("Hodenkobold");
+	// 	}
 	
-	while(1) {
-		display_clear();
-		spi_write_string("  NUR ANZEIGE!  ");
-		
-		display_set_row(1);
-		sprintf(display, "Uout: %umV", uNetzteil); // Netzteilspannung
-		spi_write_string(display);
-		
-		display_set_row(2);
-		sprintf(display, "Iout: %umA", strom); // Laststrom
-		spi_write_string(display);
-		
-		delayms(100);
-	}
-	
-	while(1) {
-		if (status == 0) { // init state: Netzteil Ausgang AUS
-			display_set_row(0);
-			spi_write_string("Netzteil INAKTIV");
-			uartTxStrln("NT aus");
-			NT_ON(0);
-			LED(0);
-		}
-		if (knopf & 1) { // wechsle in status
-			if (status == 0) {
-				status = 1;
-			} else if (status == 2) {
-				setPowerOutput(sollspannung);
-				NT_ON(1); // aktiviere netzteil
-				LED(1);
-				status = 3;
-			}
-		}
-		if (status == 1) { // spannung einstellen
-			display_set_row(0);
-			spi_write_string("U_soll stellen..");
-			uartTxStrln("U stellen");
-			status = 2;
-		}
-		if (status == 3) { // strom einstellen
-			display_set_row(0);
-			spi_write_string("I_max stellen..");
-			uartTxStrln("I stellen");
-			status = 4;
-		}
-		if ((knopf & 1<<2) || (knopf & 1<<3)) { // knopf gedreht um 1 nach rechts oder links
-			if (status == 2) { // spannung verstellen
-				display_set_row(1);
-				spi_write_string("Sollspannung:   ");
-				if (knopf & 1<<2) { // Knopf rechts gedreht
-					if(sollspannung<60000) {
-						sollspannung = sollspannung+100; // +100mV
-					}
-				} else if (knopf & 1<<3) { // Knopf links gedreht
-					if(sollspannung>12000) {
-						sollspannung = sollspannung-100; // -100mV
-					}
-				}
-				display_set_row(3);
-				sprintf(display, "Uout: %umV", sollspannung); // Sollspannung neu
-				spi_write_string(display);
-			}
-			if (status == 4) {
-				display_set_row(1);
-				spi_write_string("Maximalstrom:   ");
-				if (knopf & 1<<2) { // Knopf rechts gedreht
-					if(maximalstrom<55000) {
-						maximalstrom = maximalstrom+100; // +100mV
-					}
-				} else if (knopf & 1<<3) { // Knopf links gedreht
-					if(maximalstrom>0) {
-						maximalstrom = maximalstrom-100; // -100mV
-					}
-				}
-				display_set_row(3);
-				sprintf(display, "Umax: %umA", maximalstrom); // Sollspannung neu
-				spi_write_string(display);
-			}
-		}
-		if (status == 42) { // regler läuft.
-			// Regler läuft.
-			if (strom > maximalstrom) {
-				tempspannung--;
-			}
-			if (strom < maximalstrom) {
-				if (tempspannung < sollspannung) {
-					tempspannung++;
-				}
-			}
-			setPowerOutput(tempspannung);
-		}
-	}
 	return 0;
 }
+/*
+
+while(1) {
+	display_clear();
+	spi_write_string("  NUR ANZEIGE!  ");
+	
+	display_set_row(1);
+	sprintf(display, "Uout: %umV", uNetzteil); // Netzteilspannung
+	spi_write_string(display);
+	
+	display_set_row(2);
+	sprintf(display, "Iout: %umA", strom); // Laststrom
+	spi_write_string(display);
+	
+	delayms(100);
+}
+
+while(1) {
+	if (status == 0) { // init state: Netzteil Ausgang AUS
+		display_set_row(0);
+		spi_write_string("Netzteil INAKTIV");
+		uartTxStrln("NT aus");
+		NT_ON(0);
+		LED(0);
+	}
+	if (knopf & 1) { // wechsle in status
+		if (status == 0) {
+			status = 1;
+		} else if (status == 2) {
+			setPowerOutput(sollspannung);
+			NT_ON(1); // aktiviere netzteil
+			LED(1);
+			status = 3;
+		}
+	}
+	if (status == 1) { // spannung einstellen
+		display_set_row(0);
+		spi_write_string("U_soll stellen..");
+		uartTxStrln("U stellen");
+		status = 2;
+	}
+	if (status == 3) { // strom einstellen
+		display_set_row(0);
+		spi_write_string("I_max stellen..");
+		uartTxStrln("I stellen");
+		status = 4;
+	}
+	if ((knopf & 1<<2) || (knopf & 1<<3)) { // knopf gedreht um 1 nach rechts oder links
+		if (status == 2) { // spannung verstellen
+			display_set_row(1);
+			spi_write_string("Sollspannung:   ");
+			if (knopf & 1<<2) { // Knopf rechts gedreht
+				if(sollspannung<60000) {
+					sollspannung = sollspannung+100; // +100mV
+				}
+			} else if (knopf & 1<<3) { // Knopf links gedreht
+				if(sollspannung>12000) {
+					sollspannung = sollspannung-100; // -100mV
+				}
+			}
+			display_set_row(3);
+			sprintf(display, "Uout: %umV", sollspannung); // Sollspannung neu
+			spi_write_string(display);
+		}
+		if (status == 4) {
+			display_set_row(1);
+			spi_write_string("Maximalstrom:   ");
+			if (knopf & 1<<2) { // Knopf rechts gedreht
+				if(maximalstrom<55000) {
+					maximalstrom = maximalstrom+100; // +100mV
+				}
+			} else if (knopf & 1<<3) { // Knopf links gedreht
+				if(maximalstrom>0) {
+					maximalstrom = maximalstrom-100; // -100mV
+				}
+			}
+			display_set_row(3);
+			sprintf(display, "Umax: %umA", maximalstrom); // Sollspannung neu
+			spi_write_string(display);
+		}
+	}
+	if (status == 42) { // regler läuft.
+		// Regler läuft.
+		if (strom > maximalstrom) {
+			tempspannung--;
+		}
+		if (strom < maximalstrom) {
+			if (tempspannung < sollspannung) {
+				tempspannung++;
+			}
+		}
+		setPowerOutput(tempspannung);
+	}
+}*/
