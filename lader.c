@@ -313,10 +313,12 @@ uint16_t stromeinstellung(uint16_t strom){
 }
 
 void netzteil_regulation(uint16_t spannung, uint16_t strom){
+	//TODO
 }
 
 
 void stateMachine(void) {
+	knopf=0;
 	while (1){
 		switch (state) {
 			case INIT_STATE:
@@ -563,7 +565,7 @@ int main(void) {
 	delayms(100);
 	SPKR(0);
 	
-	setPowerOutput(24000);
+	//setPowerOutput(24000);
 	
 	// 	while(1) {
 	// 		DOGM163_init(); // 3x16 Zeichen reflexives LCD
@@ -571,7 +573,7 @@ int main(void) {
 	// 		display_return_home();
 	// 		spi_write_string("Hodenkobold");
 	// 	}
-	
+		
 	stateMachine();
 	return 0;
 }
