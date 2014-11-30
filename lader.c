@@ -247,11 +247,12 @@ ISR(ADC_vect, ISR_BLOCK) {
 
 uint8_t knopf_losgelassen(void) {
 	uint8_t return_value = B_KNOPF_LOSGELASSEN;
-	RESET_KNOPF_LOSGELASSEN;
 	if(return_value){
 		SPKR(1);
 		delayms(10);
 		SPKR(0);
+		RESET_KNOPF_LOSGELASSEN;
+		RESET_KNOPF_GEDRUECKT;
 	}
 	return return_value;
 }
@@ -314,6 +315,7 @@ uint16_t stromeinstellung(uint16_t strom){
 
 void netzteil_regulation(uint16_t spannung, uint16_t strom){
 	//TODO
+	static uint8_t firststart=0;
 }
 
 
@@ -457,6 +459,7 @@ void stateMachine(void) {
 				break;
 				
 			case REGELUNG_NETZGERAET:
+				NT_ON(1);
 				uartTxStrln("REGELUNG_NETZGERÄT");
 					display_set_row(1);
 					sprintf(display, "Uout: %5umV ", uNetzteil); // Netzteilspannung
@@ -467,8 +470,9 @@ void stateMachine(void) {
 					netzteil_regulation(netzgeraet_spannung, netzgeraet_strom);
 				if (knopf_losgelassen()) {
 					state=MODUS_NETZGERAET;
+					NT_ON(0);
 				}
-				delayms(1000);				
+				delayms(100);				
 				break;
 				
 				//in Funktionen ausgelagert

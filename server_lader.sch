@@ -29,6 +29,7 @@ LIBS:opto
 LIBS:atmel
 LIBS:contrib
 LIBS:valves
+LIBS:toni
 LIBS:server_lader-cache
 EELAYER 25 0
 EELAYER END
@@ -2402,4 +2403,6 @@ F 3 "" H 1550 3350 60  0000 C CNN
 $EndComp
 Text Notes 9200 4400 0    60   ~ 0
 RFB = 10k\nRG1 = 3,3k\nRG2 = 10k
+Text Notes 7850 5850 0    60   ~ 0
+Änderungen für nächste Version:\n-Kurzschlussbrücke für 5VRT und Power_GND vorsehen\n-abblockkondensatoren für Button vorsehen\n-alternative Bestückungsvariante mit anderem Stromsensor
 $EndSCHEMATC
