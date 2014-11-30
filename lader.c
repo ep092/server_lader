@@ -97,44 +97,7 @@ volatile uint8_t knopf=0;
 // Drehung Pin 1
 
 
-uint8_t knopf_losgelassen(void) {
-	uint8_t return_value = B_KNOPF_LOSGELASSEN;
-	RESET_KNOPF_LOSGELASSEN;
-	if(return_value){
-		SPKR(1);
-		delayms(10);
-		SPKR(0);
-	}
-	return return_value;
-}
 
-uint8_t knopf_gedrueckt(void) {
-	uint8_t return_value = B_KNOPF_GEDRUECKT;
-	RESET_KNOPF_GEDRUECKT;
-	return return_value;
-}
-
-uint8_t step_links(void) {
-	uint8_t return_value = B_STEP_LINKS;
-	RESET_STEP_LINKS;
-	if(return_value){
-		SPKR(1);
-		delayms(10);
-		SPKR(0);
-	}
-	return return_value;
-}
-
-uint8_t step_rechts(void) {
-	uint8_t return_value = B_STEP_RECHTS;
-	RESET_STEP_RECHTS;
-	if(return_value){
-		SPKR(1);
-		delayms(10);
-		SPKR(0);
-	}
-	return return_value;
-}
 
 void adcInit(void) {
 	ADMUX = 0; // Referenz auf externe Referenz
@@ -282,6 +245,45 @@ ISR(ADC_vect, ISR_BLOCK) {
 	}
 }
 
+uint8_t knopf_losgelassen(void) {
+	uint8_t return_value = B_KNOPF_LOSGELASSEN;
+	RESET_KNOPF_LOSGELASSEN;
+	if(return_value){
+		SPKR(1);
+		delayms(10);
+		SPKR(0);
+	}
+	return return_value;
+}
+
+uint8_t knopf_gedrueckt(void) {
+	uint8_t return_value = B_KNOPF_GEDRUECKT;
+	RESET_KNOPF_GEDRUECKT;
+	return return_value;
+}
+
+uint8_t step_links(void) {
+	uint8_t return_value = B_STEP_LINKS;
+	RESET_STEP_LINKS;
+	if(return_value){
+		SPKR(1);
+		delayms(10);
+		SPKR(0);
+	}
+	return return_value;
+}
+
+uint8_t step_rechts(void) {
+	uint8_t return_value = B_STEP_RECHTS;
+	RESET_STEP_RECHTS;
+	if(return_value){
+		SPKR(1);
+		delayms(10);
+		SPKR(0);
+	}
+	return return_value;
+}
+
 uint16_t spannungseinstellung(uint16_t spannung){
 	while(knopf_losgelassen()!=1){
 		sprintf(display, "Uout: %5umV ", spannung);
@@ -297,6 +299,17 @@ uint16_t spannungseinstellung(uint16_t spannung){
 }
 
 uint16_t stromeinstellung(uint16_t strom){
+	while(knopf_losgelassen()!=1){
+		sprintf(display, "Uout: %5umA ", strom);
+		display_set_row(2);
+		spi_write_string(display);
+		if (step_links()){
+			strom -=100;
+		}else if (step_rechts()){
+			strom += 100;
+		}//TODO overflow
+	}
+	return strom;
 }
 
 void netzteil_regulation(uint16_t spannung, uint16_t strom){
