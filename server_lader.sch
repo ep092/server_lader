@@ -29,7 +29,6 @@ LIBS:opto
 LIBS:atmel
 LIBS:contrib
 LIBS:valves
-LIBS:toni
 LIBS:server_lader-cache
 EELAYER 25 0
 EELAYER END
@@ -568,7 +567,7 @@ L TL071 U6
 U 1 1 54629CF8
 P 10450 3150
 F 0 "U6" H 10600 3450 70  0000 C CNN
-F 1 "OPA188" H 10600 3350 70  0000 C CNN
+F 1 "OPA827" H 10600 3350 70  0000 C CNN
 F 2 "SMD_Packages:SSOP-8" H 10450 3150 60  0001 C CNN
 F 3 "" H 10450 3150 60  0000 C CNN
 	1    10450 3150
@@ -2405,4 +2404,6 @@ Text Notes 9200 4400 0    60   ~ 0
 RFB = 10k\nRG1 = 3,3k\nRG2 = 10k
 Text Notes 7850 5850 0    60   ~ 0
 Änderungen für nächste Version:\n-Kurzschlussbrücke für 5VRT und Power_GND vorsehen\n-abblockkondensatoren für Button vorsehen\n-alternative Bestückungsvariante mit anderem Stromsensor
+Text Notes 10600 2650 0    60   ~ 0
+OPA188 der HURENSOHN hält keinen Strom aus.\npincomp-Replacement ist der OPA827
 $EndSCHEMATC

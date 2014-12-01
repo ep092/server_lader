@@ -1,5 +1,5 @@
 //  *    Filename: lader.c
-//  *     Version: 0.0.1
+//  *     Version: 0.1.0
 //  * Description: Regelung für Ladung von riesigen Akkus!
 //  *     License: GPLv3 or later
 //  *     Depends: global.h, io.h, interrupt.h
@@ -226,7 +226,11 @@ ISR(ADC_vect, ISR_BLOCK) {
 			for(uint8_t i=0; i<MITTELWERTE; i++) {
 				temp += tabelle[2 + 3*i];
 			}
-			temp -= STROMOFFSET;
+			if (temp < STROMOFFSET) {
+				temp = 0;
+			} else {
+				temp -= STROMOFFSET;
+			}
 			strom = (uint16_t)((float)temp*ABWEICHUNG*((float)50/(float)3));
 			break;
 	}
@@ -321,7 +325,7 @@ void netzteil_regulation(void) {
 		sprintf(display, "Iout: %5umA ", strom); // Laststrom anzeigen
 		spi_write_string(display);
 		
-		if ((strom > (netzgeraet_strom + 1000)) || (uNetzteil > MAXIMALSPANNUNG)) {
+		if ((strom > (netzgeraet_strom)) || (uNetzteil > MAXIMALSPANNUNG)) {
 			NT_ON(0); // Netzteil AUS. Überstrom- oder Überspannung!
 			state = ERROR_STATE;
 			SPKR(1);
