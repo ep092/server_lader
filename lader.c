@@ -81,7 +81,8 @@ typedef enum {
 
 typedef enum { // Die verschiedenen Errorgründe.
 	OVERVOLTAGE_ERR, OVERCURRENT_ERR, OVERPOWER_ERR, OVERTEMP1_ERR,
-	OVERTEMP2_ERR, NONE
+	OVERTEMP2_ERR, TIEFENTLADEN, AKKU_FALSCH_HOCH, AKKU_FALSCH_TIEF,
+	NONE
 } state_errors;
 
 state_main state = INIT_STATE;
@@ -155,16 +156,25 @@ void timerInit(void) {
 }
 
 // Der ADC wird interruptgesteuert
-volatile uint8_t counter = 0;
-ISR(TIMER1_COMPA_vect, ISR_BLOCK) {
+volatile uint8_t counter = 0, zaehler = 0;
+// nötig für Berechnung der Netzteilleistung und der gelandenen Energiemenge
+volatile float leistung = 0, energie = 0, fuellstand = 0;
+volatile uint16_t uNetzteil=0, uReserve=0, strom=0; // U in mV, I in mA
+ISR (TIMER1_COMPA_vect, ISR_BLOCK) {
 	ADMUX = ADMUX & 0b11100000; // lösche selektiv die MUX-Bits
 	ADMUX |= (counter%3); // setze ADC-Kanal neu
 	ADCSRA |= 1<<ADSC; // start conversion
+	zaehler++;
+	if (zaehler == 100) { // es ist eine Sekunde vergangen!
+		energie += ((float)strom * (float)uNetzteil) /1000; // in Wattsekunden
+		fuellstand += (float)strom /1000; // in Amperesekunden
+		zaehler = 0;
+	}
 }
 
 
 // Drehrad Interrupts
-ISR(INT0_vect, ISR_BLOCK) {
+ISR (INT0_vect, ISR_BLOCK) {
 	if(knopf & 1<<5) { // Knopf wurde eins nach links gedreht
 		sbi(knopf, 3);
 		cbi(knopf, 5);
@@ -174,7 +184,7 @@ ISR(INT0_vect, ISR_BLOCK) {
 }
 
 // Drehung Pin 2
-ISR(INT1_vect, ISR_BLOCK) {
+ISR (INT1_vect, ISR_BLOCK) {
 	if(knopf & 1<<4) { // Knopf wurde eins nach rechts gedreht
 		sbi(knopf, 2);
 		cbi(knopf, 4);
@@ -184,7 +194,7 @@ ISR(INT1_vect, ISR_BLOCK) {
 }
 
 // KNOPFDRUCK oder loslassen
-ISR(PCINT2_vect, ISR_BLOCK) {
+ISR (PCINT2_vect, ISR_BLOCK) {
 	if(PIND & 1<<PD4) { // Knopf ist gerade losgelassen worden
 		sbi(knopf, 0);
 		cbi(knopf, 1); // lösche gedrückt-Bit wieder
@@ -201,7 +211,6 @@ ISR(PCINT2_vect, ISR_BLOCK) {
 #define REFERENZ 4	// externe Referenz, 4096mV also 4mV pro STEP
 #define ABWEICHUNG 1.000296589  // gemessene Abweichung in % vom exakten Referenzspannungswert
 #define MITTELWERTE 4
-volatile uint16_t uNetzteil=0, uReserve=0, strom=0; // U in mV, I in mA
 
 ISR (ADC_vect, ISR_BLOCK) {
 	// 	uartTxStrln("adc");
@@ -244,6 +253,7 @@ ISR (ADC_vect, ISR_BLOCK) {
 	if (counter == 3*MITTELWERTE) { // setze Counter zurück
 		counter = 0;
 	}
+	leistung = ((float)uNetzteil * (float)strom) / 1000; // Leistung in Watt
 }
 
 uint8_t knopf_losgelassen(void) {
@@ -315,6 +325,7 @@ uint16_t stromeinstellung(uint16_t lokalstrom) {
 }
 
 void netzteil_regulation(void) {
+	errors = NONE; // lösche Fehlerspeicher
 	STROMOFFSET = strom; // Offset wird beim Start des Netzteils rauskalibriert.
 	uint8_t regelspannung = 0;
 	setPowerOutput(netzgeraet_spannung);
@@ -352,7 +363,7 @@ void netzteil_regulation(void) {
 			SPKR(0);
 			continue;
 			
-		} else if (uNetzteil - 100 > netzgeraet_spannung) { // Ausgangsspannung zu hoch
+		} if (uNetzteil - 100 > netzgeraet_spannung) { // Ausgangsspannung zu hoch
 			regelspannung--;
 			delayms(10); // Zeitkonstante künstlich erhöht, damit Regelung nicht schwingt.
 			
@@ -371,8 +382,11 @@ void netzteil_regulation(void) {
 		}
 		
 		uartTxStr("U=");
-		uartTxDec(netzgeraet_spannung);
-		uartTxStrln(" mV");
+		uartTxDec(uNetzteil);
+		uartTxStr(" mV, I=");
+		uartTxDec(strom);
+		uartTxStrln(" mA");
+		
 		if ((netzgeraet_spannung + regelspannung * 8) > MAXIMALSPANNUNG) {
 			; // do nothing.
 		} else {
@@ -380,8 +394,121 @@ void netzteil_regulation(void) {
 		}
 	}
 	// ENDE. Netzteil wird abgeschaltet und State verlassen
+	if (errors == NONE) {
+		// normales Ende, keine Fehler aufgetreten.
+		state = MODUS_NETZGERAET;
+	}
 	NT_ON(0);
 	delayms(100);
+}
+
+void ladung_regulation(void) {
+	uint16_t umax = modus_lader_ladeschlussspannung + (modus_lader_ladeschlussspannung/10);
+	uint16_t imax = modus_lader_maximalstrom + (modus_lader_maximalstrom/10);
+	uint16_t tempspannung = modus_lader_ladeschlussspannung - 5000;
+	energie = 0;
+	errors = NONE;
+	STROMOFFSET = strom;
+	uint8_t regelspannung = 0;
+	
+	if (uNetzteil > modus_lader_ladeschlussspannung) { // akku schon voll oder falsche Einstellungen!
+		// ABBRUCH!
+		state = ERROR_STATE;
+		errors = AKKU_FALSCH_HOCH;
+		// Meldung bringen a "maybe falscher akku oder sowas"
+		
+	} else if (uNetzteil < (modus_lader_ladeschlussspannung/2)) { // Akku wohl tiefentladen
+		// ABBRUCH!
+		state = ERROR_STATE;
+		errors = AKKU_FALSCH_TIEF;
+		// Meldung: akku tiefentladen oder falsche Ladeschlussspannung eingestellt
+		
+	} else { // normaler Modus; aktiviere Output und Regelschleife
+		
+		// Output wird auf 5V weniger als die aktuell gemessene Spannung gesetzt.
+		setPowerOutput(tempspannung);
+		delayms(200);
+		display_clear();
+		display_set_row(0);
+		spi_write_pstr(PSTR("Akku lädt auf"));
+		NT_ON(1); // Output ON
+		
+		// Betrete Regelschleife, in der die Spannung konstant gehalten wird.
+		// wenn Knopf gedrückt oder Error passiert, wieder NT-Modus verlassen
+		while ((knopf_losgelassen() == 0) && (state == LADEN_AKTIV)) {
+			
+			display_set_row(1); // U und I
+			sprintf(display, "U=%5umV I=%5umA", uNetzteil, strom);
+			spi_write_string(display);
+			display_set_row(2); // P und E
+			sprintf(display, "P=%6fW E=%5fAh", leistung, fuellstand);
+			spi_write_string(display);
+			
+			if (strom > imax) {
+				NT_ON(0); // Netzteil AUS. Überstrom!
+				state = ERROR_STATE;
+				errors = OVERCURRENT_ERR;
+				SPKR(1);
+				delayms(1000); // TÜÜT
+				SPKR(0);
+				continue;
+				
+			} if (uNetzteil > umax) {
+				NT_ON(0); // Netzteil AUS. Überspannung!
+				state = ERROR_STATE;
+				errors = OVERVOLTAGE_ERR;
+				SPKR(1);
+				delayms(1000); // TÜÜT
+				SPKR(0);
+				continue;
+			}
+			
+			// Regelung so, dass der Sollstrom erreicht wird, aber die Ladeschlussspannung nicht überschritten.
+			
+			if (uNetzteil < modus_lader_ladeschlussspannung) { // CC modus, Akkus werden vollgedrückt
+				if (strom < (modus_lader_maximalstrom - 100)) {
+					regelspannung++;
+				} else if (strom > (modus_lader_maximalstrom + 100)) {
+					regelspannung--;
+				}
+			} else { // CV modus, Akkus fast voll.
+				// regelspannung nicht ändern.
+				if (strom < modus_lader_strom_ende) { // Akku voll.
+					NT_ON(0);
+					state = LADUNG_FERTIG;
+					errors = NONE;
+					for (uint8_t i=0; i<5; i++) {
+						SPKR(1);
+						delayms(100);
+						SPKR(0);
+						delayms(500);
+					}
+				}
+				if (uNetzteil > (modus_lader_ladeschlussspannung + 200)) {
+					regelspannung--;
+				}
+			}
+			uartTxStr("U=");
+			uartTxDec(uNetzteil);
+			uartTxStr(" mV, I=");
+			uartTxDec(strom);
+			uartTxStr(" mA, P=");
+			uartTxDec((uint16_t)fuellstand);
+			uartTxStrln(" Ah");
+			
+			if ((tempspannung + regelspannung * 20) > modus_lader_ladeschlussspannung) {
+				; // CV mode, noch warten bis I klein genug
+			} else {
+				setPowerOutput(tempspannung + regelspannung * 20);
+			}
+		}
+	}
+	// Akku voll oder Error Abbruch
+	NT_ON(0);
+	delayms(100);
+	if (state == LADEN_AKTIV) { // Ladungsabbruch durch Knopfdruck
+		state = MODUS_LADER;
+	}
 }
 
 
@@ -526,26 +653,24 @@ void stateMachine(void) {
 			case REGELUNG_NETZGERAET:
 				uartTxStrln("REGELUNG_NETZGERÄT");
 				netzteil_regulation();
-				// Funktion verlassen; Netzteil wird wieder ausgeschaltet.
-				state=MODUS_NETZGERAET;
+				// Funktion verlassen; Netzteilausgang wird wieder ausgeschaltet.
 				NT_ON(0);
 				delayms(100);
 				break;
 				
 			case LADEN_AKTIV:
 				uartTxStrln("LADEN_AKTIV");
-				display_clear();
-				spi_write_pstr(PSTR("Laden aktiv"));
-				if (knopf_losgelassen()) {
-					state = MODUS_LADER;
-				}
-				// TODO jump to ERROR_STATE; LADUNG_FERTIG
+				ladung_regulation();
+				// Funktion verlassen; Netzteilausgang wird wieder ausgeschaltet.
+				NT_ON(0);
+				delayms(100);
 				break;
 				
 			case LADUNG_FERTIG:
 				uartTxStrln("LADUNG_FERTIG");
-				display_clear();
-				spi_write_pstr(PSTR("Laden fertig"));
+				display_set_row(0);
+				spi_write_pstr(PSTR(" Ladung fertig! "));
+				// Leistungswerte bleiben vorerst bestehen.
 				if (knopf_losgelassen()) {
 					state = MODUS_LADER;
 				}
@@ -624,7 +749,7 @@ int main(void) {
 	delayms(1000);
 	
 // 	uint16_t sollspannung=30000, maximalstrom=10000; // Spannung in Millivolt, Strom in Milliampere
-	uint16_t tempspannung=0, tempstrom=0; // werte, die der Regler verändern kann.
+// 	uint16_t tempspannung=0, tempstrom=0; // werte, die der Regler verändern kann.
 	// unabhängig von denen, die der User eingibt (maximalwerte)
 	
 	sei(); // und es seien Interrupts (aktiv)!
