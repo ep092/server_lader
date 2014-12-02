@@ -36,7 +36,7 @@
 #define I2C_PIN PINC
 #define SCL PC5
 #define SDA PC4
-uint8_t ERR=0;
+uint8_t ERR = 0;
 #include "../AtmelLib/io/serial/i2c.h"
 
 // UART: 19200 Baud, 1 Stopbit, no Parity, 8 Bit/frame
@@ -66,9 +66,9 @@ uint8_t ERR=0;
 #define B_STEP_RECHTS ((knopf >>2) & 1) 
 #define RESET_STEP_RECHTS cbi(knopf, 2) 
 
-#define MAXIMALSPANNUNG 61000 // in mV, ab hier wird der Errorstate betreten!
 
-uint16_t STROMOFFSET = 593; //TODO EINBAUEN: automatische Kalibrierung vor Ladebeginn
+volatile uint16_t MAXIMALSPANNUNG = 61000; // in mV, ab hier wird der Errorstate betreten!
+volatile uint16_t STROMOFFSET = 593; // wird durch das Netzgeraet automatisch kalibriert
 
 typedef enum {
 	INIT_STATE, AUSWAHL, MODUS_LADER, MODUS_NETZGERAET, REGELUNG_NETZGERAET,
@@ -79,8 +79,14 @@ typedef enum {
 	LADESCHLUSSSPANNUNG, MAXIMALSTROM, STROM_ENDE, START, ZURUECK
 } state_modus_lader;
 
+typedef enum { // Die verschiedenen Errorgründe.
+	OVERVOLTAGE_ERR, OVERCURRENT_ERR, OVERPOWER_ERR, OVERTEMP1_ERR,
+	OVERTEMP2_ERR, NONE
+} state_errors;
+
 state_main state = INIT_STATE;
 state_modus_lader state_lader = LADESCHLUSSSPANNUNG;
+state_errors errors = NONE;
 
 uint16_t netzgeraet_spannung = 32000;
 uint16_t netzgeraet_strom = 12000;
@@ -129,15 +135,15 @@ void dacSetValue(uint16_t wert, uint8_t mode) {
 #define T 55.44
 #define M -4.9
 
-// K1 1+((float)RFB/(float)RG2)+((float)RFB/(float)RG1) // K1 = 5,0303
-// K2 ((float)RFB/(float)RG2)*DAC_REF // K2 = 2,5
+// K1 = 1+(RFB/RG2)+(RFB/RG1)	// K1 = 5,0303
+// K2 = (RFB/RG2)*DAC_REF 	// K2 = 2,5
 
 #define K1 5.0303
 #define K2 2.5
 
 inline void setPowerOutput(uint16_t millivolt) {
-		// Berechnung des DAC-wertes aus der sollspannung
-		dacSetValue((uint16_t)(((((((float)millivolt / 1000) - T) / M) + K2) * 65536) / (K1 * DAC_REF)), 0);
+	// Berechnung des DAC-wertes aus der sollspannung
+	dacSetValue((uint16_t)(((((((float)millivolt / 1000) - T) / M) + K2) * 65536) / (K1 * DAC_REF)), 0);
 }
 
 void timerInit(void) {
@@ -197,7 +203,7 @@ ISR(PCINT2_vect, ISR_BLOCK) {
 #define MITTELWERTE 4
 volatile uint16_t uNetzteil=0, uReserve=0, strom=0; // U in mV, I in mA
 
-ISR(ADC_vect, ISR_BLOCK) {
+ISR (ADC_vect, ISR_BLOCK) {
 	// 	uartTxStrln("adc");
 	// ADC-Auslesungen und Rechnung mit Gleitmittelwert über 4 Werte
 	static uint16_t tabelle[3*MITTELWERTE]; // hier kommen die ADC-werte rein.
@@ -309,12 +315,15 @@ uint16_t stromeinstellung(uint16_t lokalstrom) {
 }
 
 void netzteil_regulation(void) {
+	STROMOFFSET = strom; // Offset wird beim Start des Netzteils rauskalibriert.
 	uint8_t regelspannung = 0;
 	setPowerOutput(netzgeraet_spannung);
 	delayms(200);
-	NT_ON(1);
 	display_set_row(0);
 	spi_write_pstr(PSTR("Netzgeraet AKTIV"));
+	NT_ON(1); // Output ON
+	
+	// Betrete Regelschleife, in der die Spannung konstant gehalten wird.
 	// wenn Knopf gedrückt oder Error passiert, wieder NT-Modus verlassen
 	while ((knopf_losgelassen() == 0) && (state != ERROR_STATE)) {
 		
@@ -325,9 +334,19 @@ void netzteil_regulation(void) {
 		sprintf(display, "Iout: %5umA ", strom); // Laststrom anzeigen
 		spi_write_string(display);
 		
-		if ((strom > (netzgeraet_strom)) || (uNetzteil > MAXIMALSPANNUNG)) {
-			NT_ON(0); // Netzteil AUS. Überstrom- oder Überspannung!
+		if (strom > (netzgeraet_strom)) {
+			NT_ON(0); // Netzteil AUS. Überstrom!
 			state = ERROR_STATE;
+			errors = OVERCURRENT_ERR;
+			SPKR(1);
+			delayms(1000); // TÜÜT
+			SPKR(0);
+			continue;
+			
+		} if (uNetzteil > MAXIMALSPANNUNG) {
+			NT_ON(0); // Netzteil AUS. Überspannung!
+			state = ERROR_STATE;
+			errors = OVERVOLTAGE_ERR;
 			SPKR(1);
 			delayms(1000); // TÜÜT
 			SPKR(0);
@@ -474,14 +493,14 @@ void stateMachine(void) {
 				}
 				switch (modus_netzgeraet_auswahl) {
 					case 0:
-						spi_write_pstr(PSTR("Spannung"));
+						spi_write_pstr(PSTR("Sollspannung"));
 						if (knopf_losgelassen()) {
 							netzgeraet_spannung = spannungseinstellung(netzgeraet_spannung);
 						}
 						break;
 						
 					case 1:
-						spi_write_pstr(PSTR("Strom"));
+						spi_write_pstr(PSTR("Maximalstrom"));
 						if (knopf_losgelassen()) {
 							netzgeraet_strom = stromeinstellung(netzgeraet_strom);
 						}
@@ -516,7 +535,7 @@ void stateMachine(void) {
 			case LADEN_AKTIV:
 				uartTxStrln("LADEN_AKTIV");
 				display_clear();
-				spi_write_string("Laden aktiv");
+				spi_write_pstr(PSTR("Laden aktiv"));
 				if (knopf_losgelassen()) {
 					state = MODUS_LADER;
 				}
@@ -526,7 +545,7 @@ void stateMachine(void) {
 			case LADUNG_FERTIG:
 				uartTxStrln("LADUNG_FERTIG");
 				display_clear();
-				spi_write_string("Laden fertig");
+				spi_write_pstr(PSTR("Laden fertig"));
 				if (knopf_losgelassen()) {
 					state = MODUS_LADER;
 				}
@@ -536,7 +555,26 @@ void stateMachine(void) {
 				uartTxStrln("ERROR_STATE");
 				NT_ON(0);
 				display_clear();
-				spi_write_string("Error");
+				spi_write_pstr(PSTR("FEHLER!"));
+				display_set_row(1);
+				switch (errors) {
+					case OVERVOLTAGE_ERR:
+						spi_write_pstr(PSTR("Ausgangsspannungzu hoch!"));
+						break;
+					case OVERCURRENT_ERR:
+						spi_write_pstr(PSTR("Ausgangsstrom   zu hoch!"));
+						break;
+					case OVERTEMP1_ERR:
+						spi_write_pstr(PSTR("Innentemperatur ueberschritten!"));
+						break;
+					case OVERTEMP2_ERR:
+						spi_write_pstr(PSTR("Stromsensor zu  warm!"));
+						break;
+					default:
+						spi_write_pstr(PSTR("Komischer Fehleraufgetreten..."));
+						break;
+				}
+				errors = NONE; // Lösche Fehlercode
 				delayms(100);
 				if (knopf_losgelassen()) {
 					state = AUSWAHL;
