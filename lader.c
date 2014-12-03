@@ -243,11 +243,11 @@ ISR (ADC_vect, ISR_BLOCK) {
 			}
 
 			strom = (uint16_t)((float)temp*ABWEICHUNG*((float)50/(float)3));
-// 			if (strom < STROMOFFSET) {
-// 				strom = 0;
-// 			} else {
-// 				strom -= STROMOFFSET;
-// 			}
+			if (strom < STROMOFFSET) {
+				strom = 0;
+			} else {
+				strom -= STROMOFFSET;
+			}
 			break;
 	}
 	counter++;
@@ -328,7 +328,7 @@ uint16_t stromeinstellung(uint16_t lokalstrom) {
 void netzteil_regulation(void) {
 	errors = NONE; // lösche Fehlerspeicher
 	STROMOFFSET = 0;
-	delayms(2000);
+	delayms(200);
 	STROMOFFSET = strom; // Offset wird beim Start des Netzteils rauskalibriert.
 	uint8_t regelspannung = 0;
 	setPowerOutput(netzgeraet_spannung);
@@ -357,7 +357,7 @@ void netzteil_regulation(void) {
 			SPKR(0);
 			continue;
 			
-		} if ((uNetzteil > MAXIMALSPANNUNG) || (uNetzteil > (netzgeraet_spannung+1000))) {
+		} if ((uNetzteil > MAXIMALSPANNUNG) || (uNetzteil > (netzgeraet_spannung+300))) {
 			NT_ON(0); // Netzteil AUS. Überspannung!
 			state = ERROR_STATE;
 			errors = OVERVOLTAGE_ERR;
@@ -541,11 +541,9 @@ void stateMachine(void) {
 				if (knopf_losgelassen()) {
 					if (auswahl==0) {
 						state=MODUS_LADER;
-						// auswahl=0;
 						break;
 					} else if (auswahl==1) {
 						state=MODUS_NETZGERAET;
-						// auswahl=0;
 						break;
 					}
 				}
@@ -641,6 +639,7 @@ void stateMachine(void) {
 					case 2:
 						spi_write_pstr(PSTR("Start"));
 						if (knopf_losgelassen()) {
+							modus_netzgeraet_auswahl=0;
 							state = REGELUNG_NETZGERAET;
 						}
 						break;
@@ -699,6 +698,12 @@ void stateMachine(void) {
 						break;
 					case OVERTEMP2_ERR:
 						spi_write_pstr(PSTR("Stromsensor zu  warm!"));
+						break;
+					case AKKU_FALSCH_HOCH:
+						spi_write_pstr(PSTR("Akku schon voll!"));
+						break;
+					case AKKU_FALSCH_TIEF:
+						spi_write_pstr(PSTR("Akku tiefentladen!"));
 						break;
 					default:
 						spi_write_pstr(PSTR("Komischer Fehleraufgetreten..."));
