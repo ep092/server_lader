@@ -241,12 +241,13 @@ ISR (ADC_vect, ISR_BLOCK) {
 			for(uint8_t i=0; i<MITTELWERTE; i++) {
 				temp += tabelle[2 + 3*i];
 			}
-			if (temp < STROMOFFSET) {
-				temp = 0;
-			} else {
-				temp -= STROMOFFSET;
-			}
+
 			strom = (uint16_t)((float)temp*ABWEICHUNG*((float)50/(float)3));
+// 			if (strom < STROMOFFSET) {
+// 				strom = 0;
+// 			} else {
+// 				strom -= STROMOFFSET;
+// 			}
 			break;
 	}
 	counter++;
@@ -326,6 +327,8 @@ uint16_t stromeinstellung(uint16_t lokalstrom) {
 
 void netzteil_regulation(void) {
 	errors = NONE; // lösche Fehlerspeicher
+	STROMOFFSET = 0;
+	delayms(2000);
 	STROMOFFSET = strom; // Offset wird beim Start des Netzteils rauskalibriert.
 	uint8_t regelspannung = 0;
 	setPowerOutput(netzgeraet_spannung);
@@ -354,7 +357,7 @@ void netzteil_regulation(void) {
 			SPKR(0);
 			continue;
 			
-		} if (uNetzteil > MAXIMALSPANNUNG) {
+		} if ((uNetzteil > MAXIMALSPANNUNG) || (uNetzteil > (netzgeraet_spannung+1000))) {
 			NT_ON(0); // Netzteil AUS. Überspannung!
 			state = ERROR_STATE;
 			errors = OVERVOLTAGE_ERR;
@@ -408,6 +411,8 @@ void ladung_regulation(void) {
 	uint16_t tempspannung = modus_lader_ladeschlussspannung - 5000;
 	energie = 0;
 	errors = NONE;
+	STROMOFFSET = 0;
+	delayms(200);
 	STROMOFFSET = strom;
 	uint8_t regelspannung = 0;
 	
@@ -699,10 +704,11 @@ void stateMachine(void) {
 						spi_write_pstr(PSTR("Komischer Fehleraufgetreten..."));
 						break;
 				}
-				errors = NONE; // Lösche Fehlercode
 				delayms(100);
 				if (knopf_losgelassen()) {
 					state = AUSWAHL;
+					errors = NONE; // Lösche Fehlercode
+
 				}
 				break;
 		}
