@@ -66,6 +66,13 @@ uint8_t ERR = 0;
 #define B_STEP_RECHTS ((knopf >>2) & 1) 
 #define RESET_STEP_RECHTS cbi(knopf, 2) 
 
+#define AE 0b10001110
+#define ae 0b10000100
+#define OE 0b10011001
+#define oe 0b10010100
+#define UE 0b10011010
+#define ue 0b10000001
+
 
 volatile uint16_t MAXIMALSPANNUNG = 61000; // in mV, ab hier wird der Errorstate betreten!
 volatile uint16_t STROMOFFSET = 593; // wird durch das Netzgeraet automatisch kalibriert
@@ -334,7 +341,9 @@ void netzteil_regulation(void) {
 	setPowerOutput(netzgeraet_spannung);
 	delayms(200);
 	display_set_row(0);
-	spi_write_pstr(PSTR("Netzgeraet AKTIV"));
+	spi_write_pstr(PSTR("Netzger"));
+	spi_write_char(ae);
+	spi_write_pstr(PSTR("t AKTIV"));
 	NT_ON(1); // Output ON
 	
 	// Betrete Regelschleife, in der die Spannung konstant gehalten wird.
@@ -435,7 +444,9 @@ void ladung_regulation(void) {
 		delayms(200);
 		display_clear();
 		display_set_row(0);
-		spi_write_pstr(PSTR("Akku lädt auf"));
+		spi_write_pstr(PSTR("Akku l"));
+		spi_write_char(ae);
+		spi_write_pstr(PSTR("dt auf"));
 		NT_ON(1); // Output ON
 		
 		// Betrete Regelschleife, in der die Spannung konstant gehalten wird.
@@ -600,7 +611,9 @@ void stateMachine(void) {
 						break;
 						
 					case ZURUECK:
-						spi_write_pstr(PSTR("Zurück"));
+						spi_write_pstr(PSTR("Zur"));
+						spi_write_char(ue);
+						spi_write_pstr(PSTR("ck"));
 						if (knopf_losgelassen()) {
 							state_lader=0;
 							state = AUSWAHL;
@@ -614,7 +627,10 @@ void stateMachine(void) {
 				static uint8_t modus_netzgeraet_auswahl = 0; // 0=Spannung; 1=Maximalstrom; 2=start; 3=zurück
 				delayms(100);
 				display_clear();
-				spi_write_pstr(PSTR("Modus: Netzgerät"));
+				spi_write_pstr(PSTR("Modus: Netzger"));
+				spi_write_char(ae);
+				spi_write_pstr(PSTR("t"));
+
 				display_set_row(1);
 				if (step_links() && (modus_netzgeraet_auswahl != 0)) {
 					modus_netzgeraet_auswahl--;
@@ -645,7 +661,9 @@ void stateMachine(void) {
 						break;
 						
 					case 3:
-						spi_write_pstr(PSTR("zurück"));
+						spi_write_pstr(PSTR("Zur"));
+						spi_write_char(ue);
+						spi_write_pstr(PSTR("ck"));
 						if (knopf_losgelassen()) {
 							modus_netzgeraet_auswahl=0;
 							state = AUSWAHL;
@@ -694,7 +712,9 @@ void stateMachine(void) {
 						spi_write_pstr(PSTR("Ausgangsstrom   zu hoch!"));
 						break;
 					case OVERTEMP1_ERR:
-						spi_write_pstr(PSTR("Innentemperatur ueberschritten!"));
+						spi_write_pstr(PSTR("Innentemperatur "));
+						spi_write_char(ue);
+						spi_write_pstr(PSTR("berschritten!"));
 						break;
 					case OVERTEMP2_ERR:
 						spi_write_pstr(PSTR("Stromsensor zu  warm!"));
