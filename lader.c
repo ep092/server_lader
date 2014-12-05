@@ -333,10 +333,13 @@ uint16_t stromeinstellung(uint16_t lokalstrom) {
 }
 
 void netzteil_regulation(void) {
+	cli();
+	uint16_t ulokal = uNetzteil, ilokal = strom; // werden aus uNetzteil und strom erzeugt, damit interrupts
+	sei();
 	errors = NONE; // lösche Fehlerspeicher
 	STROMOFFSET = 0;
 	delayms(200);
-	STROMOFFSET = strom; // Offset wird beim Start des Netzteils rauskalibriert.
+	STROMOFFSET = ilokal; // Offset wird beim Start des Netzteils rauskalibriert.
 	uint8_t regelspannung = 0;
 	setPowerOutput(netzgeraet_spannung - 6000);
 	display_set_row(0);
@@ -351,20 +354,19 @@ void netzteil_regulation(void) {
 	// wenn Knopf gedrückt oder Error passiert, wieder NT-Modus verlassen
 	while ((knopf_losgelassen() == 0) && (state != ERROR_STATE)) {
 		
-		display_set_row(1);
 		cli();
-		sprintf(display, "U_out: %5u mV ", uNetzteil); // Netzteilspannung anzeigen
+		ulokal = uNetzteil;
+		ilokal = strom;
 		sei();
+		
+		display_set_row(1);
+		sprintf(display, "U_out: %5u mV ", ulokal); // Netzteilspannung anzeigen
 		spi_write_string(display);
 		display_set_row(2);
-		cli();
-		sprintf(display, "I_out: %5u mA ", strom); // Laststrom anzeigen
-		sei();
+		sprintf(display, "I_out: %5u mA ", ilokal); // Laststrom anzeigen
 		spi_write_string(display);
 		
-		cli();
-		if (strom > (netzgeraet_strom)) {
-			sei();
+		if (ilokal > (netzgeraet_strom)) {
 			NT_ON(0); // Netzteil AUS. Überstrom!
 			state = ERROR_STATE;
 			errors = OVERCURRENT_ERR;
@@ -374,9 +376,7 @@ void netzteil_regulation(void) {
 			continue;
 			
 		}
-		cli();
-		if (uNetzteil > (netzgeraet_spannung + 1000)) {
-			sei();
+		if (ulokal > (netzgeraet_spannung + 1000)) {
 			NT_ON(0); // Netzteil AUS. Überspannung!
 			state = ERROR_STATE;
 			errors = OVERVOLTAGE_ERR;
@@ -386,19 +386,15 @@ void netzteil_regulation(void) {
 			continue;
 			
 		}
-		cli();
-		if (uNetzteil - 100 > netzgeraet_spannung) { // Ausgangsspannung zu hoch
-			sei();
+		if (ulokal - 100 > netzgeraet_spannung) { // Ausgangsspannung zu hoch
 			regelspannung--;
 			delayms(1); // Zeitkonstante künstlich erhöht, damit Regelung nicht schwingt.
 			
 		}
-		if (uNetzteil + 100 < netzgeraet_spannung) { // Ausgangsspannung zu klein
-			sei();
+		if (ulokal + 100 < netzgeraet_spannung) { // Ausgangsspannung zu klein
 			regelspannung++;
 			delayms(1);
 		}
-		sei();
 		
 		// Normaler Betrieb, Spannung kann verstellt werden
 		if (step_links() && (netzgeraet_spannung > 100)) { // Spannung um 100mV runter, minimal 0V
@@ -410,13 +406,9 @@ void netzteil_regulation(void) {
 		}
 		
 		uartTxStr("U=");
-		cli();
-		uartTxDec(uNetzteil);
-		sei();
+		uartTxDec(ulokal);
 		uartTxStr(" mV, I=");
-		cli();
-		uartTxDec(strom);
-		sei();
+		uartTxDec(ilokal);
 		uartTxStrln(" mA");
 		
 		if (((netzgeraet_spannung - 300) + regelspannung * 8) > MAXIMALSPANNUNG) {
@@ -431,38 +423,37 @@ void netzteil_regulation(void) {
 	}
 	NT_ON(0);
 	delayms(100);
-	sei();
 }
 
 void ladung_regulation(void) {
 	// Lokale Schutzgrenzen - 10% über Lademaximalwerten
+	cli();
+	uint16_t ulokal = uNetzteil, ilokal = strom; // werden aus uNetzteil und strom erzeugt, damit interrupts
+	sei();
 	uint16_t umax = modus_lader_ladeschlussspannung + (modus_lader_ladeschlussspannung/10);
 	uint16_t imax = modus_lader_maximalstrom + (modus_lader_maximalstrom/10);
-	uint16_t tempspannung = uNetzteil - 2000; // Anfangsspannung ist 2V unter aktueller Akkuspannung
+	uint16_t tempspannung = ulokal - 2000; // Anfangsspannung ist 2V unter aktueller Akkuspannung
+	// nicht die Regelung stören.
 	energie = 0;
 	errors = NONE;
 	STROMOFFSET = 0;
 	delayms(1000);
-	STROMOFFSET = strom;
+	STROMOFFSET = ilokal;
 	
-// 	cli();
-	if (uNetzteil > modus_lader_ladeschlussspannung) { // Akku schon voll oder falsche Einstellungen!
-// 		sei();
+	if (ulokal > modus_lader_ladeschlussspannung) { // Akku schon voll oder falsche Einstellungen!
 		// ABBRUCH!
 		state = ERROR_STATE;
 		errors = AKKU_FALSCH_HOCH;
 		// Meldung bringen a "maybe falscher Akku oder sowas"
 		
 	}
-	if (uNetzteil < (modus_lader_ladeschlussspannung/3)) { // Akku wohl tiefentladen (NiCd kann unter 50% haben!)
-// 		sei();
+	if (ulokal < (modus_lader_ladeschlussspannung/3)) { // Akku wohl tiefentladen (NiCd kann unter 50% haben!)
 		// ABBRUCH!
 		state = ERROR_STATE;
 		errors = AKKU_FALSCH_TIEF;
 		// Meldung: akku tiefentladen oder falsche Ladeschlussspannung eingestellt
 		
 	} else { // normaler Modus; aktiviere Output und Regelschleife
-// 		sei();
 		// Output wird auf 5V weniger als die aktuell gemessene Spannung gesetzt.
 		setPowerOutput(tempspannung);
 		delayms(200);
@@ -477,19 +468,18 @@ void ladung_regulation(void) {
 		// wenn Knopf gedrückt oder Error passiert, wieder NT-Modus verlassen
 		while ((knopf_losgelassen() == 0) && (state == LADEN_AKTIV)) {
 			
+			cli(); // u und i werden ausgelesne und gecacht
+			ulokal = uNetzteil;
+			ilokal = strom;
+			sei();
+			
 			display_set_row(1); // U und I
-// 			cli();
-			snprintf(display, 17, "U=%5u I=%5u", uNetzteil, strom);
-// 			sei();
+			snprintf(display, 17, "U=%5u I=%5u", ulokal, ilokal);
 			spi_write_string(display);
 			display_set_row(2); // P[W] und E[Ah]
-// 			cli();
 			snprintf(display, 17, "P=%5u E=%5u", (uint16_t)leistung, (uint16_t)fuellstand);
-// 			sei();
 			spi_write_string(display);
-// 			cli();
-			if (strom > imax) {
-// 				sei();
+			if (ilokal > imax) {
 				state = ERROR_STATE;
 				errors = OVERCURRENT_ERR;
 				NT_ON(0); // Netzteil AUS. Überstrom!
@@ -498,9 +488,7 @@ void ladung_regulation(void) {
 				SPKR(0);
 				
 			}
-// 			cli();
-			if (uNetzteil > umax) {
-// 				sei();
+			if (ulokal > umax) {
 				state = ERROR_STATE;
 				errors = OVERVOLTAGE_ERR;
 				NT_ON(0); // Netzteil AUS. Überspannung!
@@ -510,20 +498,16 @@ void ladung_regulation(void) {
 			}
 			
 			// Regelung so, dass der Sollstrom erreicht wird, aber die Ladeschlussspannung nicht überschritten.
-// 			cli();
-			if (uNetzteil < (modus_lader_ladeschlussspannung+100)) { // CC modus, Akkus werden vollgedrückt
-				if (strom < (modus_lader_maximalstrom - 10)) {
+			if (ulokal < (modus_lader_ladeschlussspannung+100)) { // CC modus, Akkus werden vollgedrückt
+				if (ilokal < (modus_lader_maximalstrom - 10)) {
 					tempspannung +=50;
-				} else if (strom > (modus_lader_maximalstrom + 10)) {
+				} else if (ilokal > (modus_lader_maximalstrom + 10)) {
 					tempspannung -=50;
 				}
-// 				sei();
 			} 
-			if (uNetzteil > modus_lader_ladeschlussspannung) { // CV modus, Akkus fast voll.
+			if (ulokal > modus_lader_ladeschlussspannung) { // CV modus, Akkus fast voll.
 				// Ladespannung (tempspannung) nicht ändern.
-// 				cli();
-				if (strom < modus_lader_strom_ende) { // Akku voll. BEENDE LADUNG
-// 					sei();
+				if (ilokal < modus_lader_strom_ende) { // Akku voll. BEENDE LADUNG
 					state = LADUNG_FERTIG;
 					errors = NONE;
 					NT_ON(0);
@@ -534,25 +518,17 @@ void ladung_regulation(void) {
 						delayms(500);
 					}
 				}
-				if (uNetzteil > (modus_lader_ladeschlussspannung + 100)) {
+				if (ulokal > (modus_lader_ladeschlussspannung + 100)) {
 					// wenn durch transiente Effekte tempspannung zu hoch wurde...
 					tempspannung -=100;
 				}
-// 				sei();
 			}
-// 			sei();
 			uartTxStr("U=");
-// 			cli();
-			uartTxDec(uNetzteil);
-// 			sei();
+			uartTxDec(ulokal);
 			uartTxStr(" mV, I=");
-// 			cli();
-			uartTxDec(strom);
-// 			sei();
+			uartTxDec(ilokal);
 			uartTxStr(" mA, C=");
-// 			cli();
 			uartTxDec((uint16_t)fuellstand);
-// 			sei();
 			uartTxStrln(" mAh");
 			
 			if (tempspannung > modus_lader_ladeschlussspannung) {
