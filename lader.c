@@ -377,11 +377,11 @@ void netzteil_regulation(void) {
 			
 		} if (uNetzteil - 100 > netzgeraet_spannung) { // Ausgangsspannung zu hoch
 			regelspannung--;
-			delayms(10); // Zeitkonstante künstlich erhöht, damit Regelung nicht schwingt.
+			delayms(1); // Zeitkonstante künstlich erhöht, damit Regelung nicht schwingt.
 			
 		} else if (uNetzteil + 100 < netzgeraet_spannung) { // Ausgangsspannung zu klein
 			regelspannung++;
-			delayms(10);
+			delayms(1);
 		}
 		
 		// Normaler Betrieb, Spannung kann verstellt werden
@@ -516,6 +516,7 @@ void ladung_regulation(void) {
 				; // CV mode, noch warten bis I klein genug
 			} else {
 				setPowerOutput(tempspannung + regelspannung * 20);
+				delayms(1); // Erhöhung der Regelzeitkonstate
 			}
 		}
 	}
