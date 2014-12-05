@@ -407,7 +407,6 @@ void netzteil_regulation(void) {
 	}
 	// ENDE. Netzteil wird abgeschaltet und State verlassen
 	if (errors == NONE) {
-		// normales Ende, keine Fehler aufgetreten.
 		state = MODUS_NETZGERAET;
 	}
 	NT_ON(0);
