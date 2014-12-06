@@ -333,12 +333,12 @@ uint16_t stromeinstellung(uint16_t lokalstrom) {
 }
 
 void netzteil_regulation(void) {
-	cli();
-	uint16_t ulokal = uNetzteil, ilokal = strom; // werden aus uNetzteil und strom erzeugt, damit interrupts
-	sei();
-	errors = NONE; // lösche Fehlerspeicher
 	STROMOFFSET = 0;
 	delayms(200);
+	cli();
+	uint16_t ulokal = uNetzteil, ilokal = strom;
+	sei();
+	errors = NONE; // lösche Fehlerspeicher
 	STROMOFFSET = ilokal; // Offset wird beim Start des Netzteils rauskalibriert.
 	uint8_t regelspannung = 0;
 	setPowerOutput(netzgeraet_spannung - 6000);
@@ -431,7 +431,7 @@ void ladung_regulation(void) {
 	uint16_t ulokal = uNetzteil, ilokal = strom; // werden aus uNetzteil und strom erzeugt, damit interrupts
 	sei();
 	uint16_t umax = modus_lader_ladeschlussspannung + (modus_lader_ladeschlussspannung/10);
-	uint16_t imax = modus_lader_maximalstrom + (modus_lader_maximalstrom/10);
+	uint16_t imax = modus_lader_maximalstrom + (modus_lader_maximalstrom/5);
 	uint16_t tempspannung = ulokal - 2000; // Anfangsspannung ist 2V unter aktueller Akkuspannung
 	// nicht die Regelung stören.
 	energie = 0;
@@ -461,7 +461,7 @@ void ladung_regulation(void) {
 		display_set_row(0);
 		spi_write_pstr(PSTR("Akku l"));
 		spi_write_char(ae);
-		spi_write_pstr(PSTR("dt auf"));
+		spi_write_pstr(PSTR("dt auf!"));
 		NT_ON(1); // Output ON
 		
 		// Betrete Regelschleife, in der die Spannung konstant gehalten wird.
@@ -531,7 +531,7 @@ void ladung_regulation(void) {
 			uartTxDec((uint16_t)fuellstand);
 			uartTxStrln(" mAh");
 			
-			if (tempspannung > modus_lader_ladeschlussspannung) {
+			if (ulokal > modus_lader_ladeschlussspannung) {
 				; // CV mode, noch warten bis I klein genug
 			} else {
 				setPowerOutput(tempspannung);
@@ -545,7 +545,6 @@ void ladung_regulation(void) {
 	if (state == LADEN_AKTIV) { // Ladungsabbruch durch Knopfdruck
 		state = MODUS_LADER;
 	}
-	sei();
 }
 
 
