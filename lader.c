@@ -1,5 +1,5 @@
 //  *    Filename: lader.c
-//  *     Version: 0.1.0
+//  *     Version: 0.2.0
 //  * Description: Regelung für Ladung von riesigen Akkus!
 //  *     License: GPLv3 or later
 //  *     Depends: global.h, io.h, interrupt.h
@@ -99,7 +99,7 @@ state_errors errors = NONE;
 uint16_t netzgeraet_spannung = 32000;
 uint16_t netzgeraet_strom = 12000;
 
-uint16_t modus_lader_ladeschlussspannung = 42000;
+uint16_t modus_lader_ladeschlussspannung = 21000;
 uint16_t modus_lader_maximalstrom = 2000;
 uint16_t modus_lader_strom_ende = 300;
 
@@ -428,16 +428,17 @@ void netzteil_regulation(void) {
 void ladung_regulation(void) {
 	// Lokale Schutzgrenzen - 10% über Lademaximalwerten
 	cli();
-	uint16_t ulokal = uNetzteil, ilokal = strom; // werden aus uNetzteil und strom erzeugt, damit interrupts
+	uint16_t ulokal = uNetzteil, ilokal; // werden aus uNetzteil und strom erzeugt, damit interrupts
 	sei();
 	uint16_t umax = modus_lader_ladeschlussspannung + (modus_lader_ladeschlussspannung/10);
 	uint16_t imax = modus_lader_maximalstrom + (modus_lader_maximalstrom/5);
-	uint16_t tempspannung = ulokal - 2000; // Anfangsspannung ist 2V unter aktueller Akkuspannung
+	uint16_t tempspannung = ulokal - 1000; // Anfangsspannung ist 2V unter aktueller Akkuspannung
 	// nicht die Regelung stören.
 	energie = 0;
 	errors = NONE;
 	STROMOFFSET = 0;
 	delayms(1000);
+	ilokal = strom;
 	STROMOFFSET = ilokal;
 	
 	if (ulokal > modus_lader_ladeschlussspannung) { // Akku schon voll oder falsche Einstellungen!
@@ -500,9 +501,11 @@ void ladung_regulation(void) {
 			// Regelung so, dass der Sollstrom erreicht wird, aber die Ladeschlussspannung nicht überschritten.
 			if (ulokal < (modus_lader_ladeschlussspannung+100)) { // CC modus, Akkus werden vollgedrückt
 				if (ilokal < (modus_lader_maximalstrom - 10)) {
-					tempspannung +=50;
+					tempspannung +=6;
+					delayms(1);
 				} else if (ilokal > (modus_lader_maximalstrom + 10)) {
-					tempspannung -=50;
+					tempspannung -=6;
+					delayms(1);
 				}
 			} 
 			if (ulokal > modus_lader_ladeschlussspannung) { // CV modus, Akkus fast voll.
