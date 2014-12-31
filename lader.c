@@ -27,9 +27,13 @@
 #include <avr/io.h>
 #include <stdio.h>
 #include <avr/pgmspace.h>
+#include <string.h>
 
 #include "../AtmelLib/global.h"
 #include "../AtmelLib/io/io.h"
+
+// UART RX Interrupt wird aktiviert - Gerät kann damit auf Fernsteuerbefehle reagieren
+#define FERNSTEUERUNG
 
 #define I2C_DDR DDRC
 #define I2C_PORT PORTC
@@ -41,7 +45,7 @@ uint8_t ERR = 0;
 
 // UART: 19200 Baud, 1 Stopbit, no Parity, 8 Bit/frame
 #define UBRRH_VALUE 0
-#define UBRRL_VALUE 25
+#define UBRRL_VALUE 51
 #include "../AtmelLib/io/serial/uart.h"
 
 #define DISPLAY_RS_DDR   DDRD
@@ -167,6 +171,7 @@ volatile uint8_t counter = 0, zaehler = 0;
 // nötig für Berechnung der Netzteilleistung und der gelandenen Energiemenge
 volatile float leistung = 0, energie = 0, fuellstand = 0;
 volatile uint16_t uNetzteil=0, uReserve=0, strom=0; // U in mV, I in mA
+
 ISR (TIMER1_COMPA_vect, ISR_BLOCK) {
 	ADMUX = ADMUX & 0b11100000; // lösche selektiv die MUX-Bits
 	ADMUX |= (counter%3); // setze ADC-Kanal neu
@@ -207,6 +212,25 @@ ISR (PCINT2_vect, ISR_BLOCK) {
 		cbi(knopf, 1); // lösche gedrückt-Bit wieder
 	} else { // Knopf gedrückt, warte auf loslassen
 		sbi(knopf, 1); // setze gedrückt-Bit
+	}
+}
+
+// UART Receive Complete Interrupt
+volatile char empfangsdaten[21];
+volatile uint8_t uartAktuell = 0;
+ISR (USART_RX_vect, ISR_BLOCK) {
+	static uint8_t position = 0;
+	empfangsdaten[position] = UDR;
+	
+	// remote echo ist wichtig.
+	uartTx(empfangsdaten[position]);
+	
+	// Daten verarbeiten...
+	if ((position == 20) || empfangsdaten[position] == '\n') {
+		empfangsdaten[position] = 0; // schreibe NULL für string Ende
+		uartAktuell = 1;
+	} else {
+		position++;
 	}
 }
 
@@ -333,6 +357,7 @@ uint16_t stromeinstellung(uint16_t lokalstrom) {
 }
 
 void netzteil_regulation(void) {
+	uartTxStrln("Netzteil aktiv");
 	STROMOFFSET = 0;
 	delayms(200);
 	cli();
@@ -341,7 +366,11 @@ void netzteil_regulation(void) {
 	errors = NONE; // lösche Fehlerspeicher
 	STROMOFFSET = ilokal; // Offset wird beim Start des Netzteils rauskalibriert.
 	uint8_t regelspannung = 0;
-	setPowerOutput(netzgeraet_spannung - 6000);
+	if (netzgeraet_spannung > 6000) {
+		setPowerOutput(netzgeraet_spannung - 6000);
+	} else {
+		setPowerOutput(netzgeraet_spannung);
+	}
 	display_set_row(0);
 	spi_write_pstr(PSTR("Netzger"));
 	spi_write_char(ae);
@@ -426,6 +455,7 @@ void netzteil_regulation(void) {
 }
 
 void ladung_regulation(void) {
+	uartTxStrln("LADEN_AKTIV");
 	// Lokale Schutzgrenzen - 10% über Lademaximalwerten
 	cli();
 	uint16_t ulokal = uNetzteil, ilokal; // werden aus uNetzteil und strom erzeugt, damit interrupts
@@ -512,6 +542,7 @@ void ladung_regulation(void) {
 				// Ladespannung (tempspannung) nicht ändern.
 				if (ilokal < modus_lader_strom_ende) { // Akku voll. BEENDE LADUNG
 					state = LADUNG_FERTIG;
+					uartTxStrln("LADUNG_FERTIG");
 					errors = NONE;
 					NT_ON(0);
 					for (uint8_t i=0; i<5; i++) {
@@ -556,16 +587,24 @@ void stateMachine(void) {
 	while (1) {
 		switch (state) {
 			case INIT_STATE:
-				uartTxStrln("INIT_STATE");
+				uartTxPstrln(PSTR("INIT_STATE"));
 				spi_write_pstr(PSTR("   Guten Tag!     gebaut von    Toni und Philipp")); // Begrüßung
 				while (knopf_losgelassen() != 1) {
+					if (uartAktuell) {
+						const char tempstr = empfangsdaten;
+						if (strcmp("start", tempstr) == 0) { // compare match!
+							delayms(100);
+							uartAktuell = 0;
+// 							break;
+						}
+					}
 				}
 				state = AUSWAHL;
-				//      if (knopf_losgelassen()) state=AUSWAHL;
+				uartTxPstrln(PSTR("AUSWAHL"));
 				break;
 				
 			case AUSWAHL:
-				uartTxStrln("AUSWAHL");
+				;
 				static uint8_t auswahl = 0; //0=LADER; 1=NETZTEIL
 				if (step_links() && (auswahl != 0)) {
 					auswahl--;
@@ -575,9 +614,11 @@ void stateMachine(void) {
 				if (knopf_losgelassen()) {
 					if (auswahl==0) {
 						state=MODUS_LADER;
+						uartTxPstrln(PSTR("MODUS_LADER"));
 						break;
 					} else if (auswahl==1) {
 						state=MODUS_NETZGERAET;
+						uartTxPstrln(PSTR("MODUS_NETZGERÄT"));
 						break;
 					}
 				}
@@ -593,7 +634,6 @@ void stateMachine(void) {
 				break;
 				
 			case MODUS_LADER:
-				uartTxStrln("MODUS_LADER");
 				if (step_links() && (state_lader != 0)) {
 					state_lader--;
 				} else if( step_rechts() && (state_lader != ZURUECK)) {
@@ -630,6 +670,7 @@ void stateMachine(void) {
 						if (knopf_losgelassen()) {
 							state_lader=0;
 							state = LADEN_AKTIV;
+							uartTxPstrln(PSTR("LADEN_AKTIV"));
 						}
 						break;
 						
@@ -640,13 +681,14 @@ void stateMachine(void) {
 						if (knopf_losgelassen()) {
 							state_lader=0;
 							state = AUSWAHL;
+							uartTxPstrln(PSTR("AUSWAHL"));
 						}
 						break;
 				}
 				break;
 				
 			case MODUS_NETZGERAET:
-				uartTxStrln("MODUS_NETZGERÄT");
+				;
 				static uint8_t modus_netzgeraet_auswahl = 0; // 0=Spannung; 1=Maximalstrom; 2=start; 3=zurück
 				delayms(100);
 				display_clear();
@@ -680,6 +722,7 @@ void stateMachine(void) {
 						if (knopf_losgelassen()) {
 							modus_netzgeraet_auswahl=0;
 							state = REGELUNG_NETZGERAET;
+							uartTxPstrln(PSTR("REGELUNG_NETZGERAET"));
 						}
 						break;
 						
@@ -690,13 +733,13 @@ void stateMachine(void) {
 						if (knopf_losgelassen()) {
 							modus_netzgeraet_auswahl=0;
 							state = AUSWAHL;
+							uartTxPstrln(PSTR("AUSWAHL"));
 						}
 						break;
 				}
 				break;
 				
 			case REGELUNG_NETZGERAET:
-				uartTxStrln("REGELUNG_NETZGERÄT");
 				netzteil_regulation();
 				// Funktion verlassen; Netzteilausgang wird wieder ausgeschaltet.
 				NT_ON(0);
@@ -704,7 +747,6 @@ void stateMachine(void) {
 				break;
 				
 			case LADEN_AKTIV:
-				uartTxStrln("LADEN_AKTIV");
 				ladung_regulation();
 				// Funktion verlassen; Netzteilausgang wird wieder ausgeschaltet.
 				NT_ON(0);
@@ -712,7 +754,6 @@ void stateMachine(void) {
 				break;
 				
 			case LADUNG_FERTIG:
-				uartTxStrln("LADUNG_FERTIG");
 				display_set_row(0);
 				spi_write_pstr(PSTR(" Ladung fertig! "));
 				// Leistungswerte bleiben vorerst bestehen.
@@ -722,7 +763,7 @@ void stateMachine(void) {
 				break;
 				
 			case ERROR_STATE:
-				uartTxStrln("ERROR_STATE");
+				uartTxPstrln(PSTR("ERROR_STATE"));
 				NT_ON(0);
 				display_clear();
 				spi_write_pstr(PSTR("FEHLER!"));
@@ -755,6 +796,7 @@ void stateMachine(void) {
 				delayms(100);
 				if (knopf_losgelassen()) {
 					state = AUSWAHL;
+					uartTxPstrln(PSTR("AUSWAHL"));
 					errors = NONE; // Lösche Fehlercode
 
 				}
@@ -777,6 +819,11 @@ int main(void) {
 	PCICR = 1<<PCIE2; // PCINT16 bis 23 aktiv
 	PCMSK2 = 1<<PCINT20; // Interrupt auf fallender UND steigender Flanke von PD4
 	
+	#ifdef FERNSTEUERUNG
+	// UART Receive Complete Interrupt für Fernsteuerung
+	UCSR0B |= 1<<RXCIE0;
+	#endif
+	
 	delayms(100); // wait for clock stabilize
 	
 	// init der Module
@@ -795,18 +842,14 @@ int main(void) {
 	
 	setPowerOutput(5000); // setze DAC, damit kein Überschwinger beim ersten Start passiert.
 	
-	uartTxStrln("Guten Tag!");
-	uartTxStrln("REICH TIME");
+	uartTxPstrln(PSTR("Guten Tag!"));
+	uartTxPstrln(PSTR("REICH TIME"));
 	uartTxNewline();
 	uartTxNewline();
 	
 	spi_write_string("   Guten Tag!     gebaut von    Toni und Philipp"); // Begrüßung
 	LED(1);
 	delayms(1000);
-	
-// 	uint16_t sollspannung=30000, maximalstrom=10000; // Spannung in Millivolt, Strom in Milliampere
-// 	uint16_t tempspannung=0, tempstrom=0; // werte, die der Regler verändern kann.
-	// unabhängig von denen, die der User eingibt (maximalwerte)
 	
 	sei(); // und es seien Interrupts (aktiv)!
 	
