@@ -216,22 +216,31 @@ ISR (PCINT2_vect, ISR_BLOCK) {
 }
 
 // UART Receive Complete Interrupt
-volatile char empfangsdaten[21];
+volatile char empfangsdaten[21], tempstring[21];
 volatile uint8_t uartAktuell = 0;
 ISR (USART_RX_vect, ISR_BLOCK) {
 	static uint8_t position = 0;
-	empfangsdaten[position] = UDR;
+	char rx = UDR;
 	
 	// remote echo ist wichtig.
-	uartTx(empfangsdaten[position]);
+	uartTx(rx);
 	
-	// Daten verarbeiten...
-	if ((position == 20) || empfangsdaten[position] == '\n') {
-		empfangsdaten[position] = 0; // schreibe NULL für string Ende
+	// nur schreibbare Zeichen in den Puffer übernehmen
+	if ((rx != 0x0A) && (rx != 0x0D)) {
+		empfangsdaten[position] = rx;
+	}
+	
+	if ((position == 20) || rx == 0x0D) {
+		strcpy (tempstring, empfangsdaten);
+		for(uint8_t i=0; i<21; i++) {
+			empfangsdaten[i] = 0; // lösche empfangsdaten
+		}
+		position = 0;
 		uartAktuell = 1;
 	} else {
 		position++;
 	}
+
 }
 
 
@@ -591,16 +600,17 @@ void stateMachine(void) {
 				spi_write_pstr(PSTR("   Guten Tag!     gebaut von    Toni und Philipp")); // Begrüßung
 				while (knopf_losgelassen() != 1) {
 					if (uartAktuell) {
-						const char tempstr = empfangsdaten;
-						if (strcmp("start", tempstr) == 0) { // compare match!
+						if (strcmp(tempstring, "start") == 0) { // compare match!
+// 							uartTxStrln(tempstring);
 							delayms(100);
 							uartAktuell = 0;
-// 							break;
+							break;
 						}
 					}
 				}
 				state = AUSWAHL;
 				uartTxPstrln(PSTR("AUSWAHL"));
+				uartTxPstrln(PSTR("möglich sind die Eingaben netzteil und lader"));
 				break;
 				
 			case AUSWAHL:
@@ -620,6 +630,22 @@ void stateMachine(void) {
 						state=MODUS_NETZGERAET;
 						uartTxPstrln(PSTR("MODUS_NETZGERÄT"));
 						break;
+					}
+				}
+				if (uartAktuell) {
+					delayms(100);
+					uartAktuell = 0;
+					if (strcmp(tempstring, "lader") == 0) { // compare match!
+						state = MODUS_LADER;
+						uartTxPstrln(PSTR("MODUS_LADER"));
+						uartTxPstrln(PSTR("Spannung, Ladestrom und Abschaltstrom nach \
+folgendem Schema eingeben:\n\ru=xxxxx\n\ri1=xxxxx\n\ri2=xxxxx\n\rmit Spannung in mV und Strom in mA\n\rzurück zur Auswahl mit z, starten mit ok"));
+					}
+					if (strcmp(tempstring, "netzteil") == 0) { // compare match!
+						state = MODUS_NETZGERAET;
+						uartTxPstrln(PSTR("MODUS_NETZGERÄT"));
+						uartTxPstrln(PSTR("Spannung und Abschaltstrom nach \
+folgendem Schema eingeben:\n\ru=xxxxx\n\ri=xxxxx\n\rmit Spannung in mV und Strom in mA\n\rzurück zur Auswahl mit z, starten mit ok"));
 					}
 				}
 				display_clear();
@@ -684,6 +710,51 @@ void stateMachine(void) {
 							uartTxPstrln(PSTR("AUSWAHL"));
 						}
 						break;
+				}
+				// UART Fernsteuerung
+				if (uartAktuell) {
+					delayms(100);
+					uartAktuell = 0;
+					if (strcmp(tempstring, "ok") == 0) {
+						// Starte Ladung
+						state = LADEN_AKTIV;
+						uartTxPstrln(PSTR("LADEN_AKTIV"));
+					}
+					
+					if (strcmp(tempstring, "z") == 0) {
+					// gehe zurück zur Auswahl
+						state = AUSWAHL;
+						uartTxPstrln(PSTR("AUSWAHL"));
+					}
+					
+					if ((strcmp(tempstring, "u=") > 0) && (state_lader != START)) {
+						// Ladeschlussspannung einstellen...
+						modus_lader_ladeschlussspannung = 0;
+						modus_lader_ladeschlussspannung += 10000*(tempstring[2]-0x30);
+						modus_lader_ladeschlussspannung += 1000 *(tempstring[3]-0x30);
+						modus_lader_ladeschlussspannung += 100  *(tempstring[4]-0x30);
+						uartTxPstr(PSTR("Ladeschlussspannung: "));
+						uartTxDec(modus_lader_ladeschlussspannung);
+						uartTxStrln(" mV");
+					} else if ((strcmp(tempstring, "i2=") > 0) && (state_lader != START)) {
+						// Ladeschlussstrom einstellen
+						modus_lader_strom_ende = 0;
+						modus_lader_strom_ende += 10000*(tempstring[3]-0x30);
+						modus_lader_strom_ende += 1000 *(tempstring[4]-0x30);
+						modus_lader_strom_ende += 100  *(tempstring[5]-0x30);
+						uartTxPstr(PSTR("Ladeschlussstrom:    "));
+						uartTxDec(modus_lader_strom_ende);
+						uartTxStrln(" mA");
+					} else if ((strcmp(tempstring, "i1=") > 0) && (state_lader != START)) {
+						// Ladestrom einstellen
+						modus_lader_maximalstrom = 0;
+						modus_lader_maximalstrom += 10000*(tempstring[3]-0x30);
+						modus_lader_maximalstrom += 1000 *(tempstring[4]-0x30);
+						modus_lader_maximalstrom += 100  *(tempstring[5]-0x30);
+						uartTxPstr(PSTR("Maximaler Ladestrom: "));
+						uartTxDec(modus_lader_maximalstrom);
+						uartTxStrln(" mA");
+					}
 				}
 				break;
 				
@@ -794,11 +865,12 @@ void stateMachine(void) {
 						break;
 				}
 				delayms(100);
-				if (knopf_losgelassen()) {
+				if (knopf_losgelassen() || uartAktuell) {
+					delayms(100);
+					uartAktuell = 0;
 					state = AUSWAHL;
 					uartTxPstrln(PSTR("AUSWAHL"));
 					errors = NONE; // Lösche Fehlercode
-
 				}
 				break;
 		}
@@ -819,16 +891,15 @@ int main(void) {
 	PCICR = 1<<PCIE2; // PCINT16 bis 23 aktiv
 	PCMSK2 = 1<<PCINT20; // Interrupt auf fallender UND steigender Flanke von PD4
 	
-	#ifdef FERNSTEUERUNG
-	// UART Receive Complete Interrupt für Fernsteuerung
-	UCSR0B |= 1<<RXCIE0;
-	#endif
-	
 	delayms(100); // wait for clock stabilize
 	
 	// init der Module
 	i2c_init();
 	uartInit();
+	#ifdef FERNSTEUERUNG
+	// UART Receive Complete Interrupt für Fernsteuerung
+	UCSR0B |= 1<<RXCIE0;
+	#endif
 	adcInit();
 	timerInit();
 	spiInit();
@@ -845,6 +916,8 @@ int main(void) {
 	uartTxPstrln(PSTR("Guten Tag!"));
 	uartTxPstrln(PSTR("REICH TIME"));
 	uartTxNewline();
+	uartTxPstrln(PSTR("Hilfe: die Eingabe muss mittels Tastatur erfolgen, das Zeilenende \
+ist ein 0x0D, wie in GTKTERM üblich"));
 	uartTxNewline();
 	
 	spi_write_string("   Guten Tag!     gebaut von    Toni und Philipp"); // Begrüßung
