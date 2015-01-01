@@ -464,7 +464,7 @@ void netzteil_regulation(void) {
 }
 
 void ladung_regulation(void) {
-	uartTxStrln("LADEN_AKTIV");
+	uartTxPstrln(PSTR("LADEN_AKTIV"));
 	// Lokale Schutzgrenzen - 10% über Lademaximalwerten
 	cli();
 	uint16_t ulokal = uNetzteil, ilokal; // werden aus uNetzteil und strom erzeugt, damit interrupts
@@ -484,6 +484,7 @@ void ladung_regulation(void) {
 		// ABBRUCH!
 		state = ERROR_STATE;
 		errors = AKKU_FALSCH_HOCH;
+		uartTxPstrln(PSTR("ERROR - Akkuspannung über Ladeschlussspannung"));
 		// Meldung bringen a "maybe falscher Akku oder sowas"
 		
 	}
@@ -491,10 +492,22 @@ void ladung_regulation(void) {
 		// ABBRUCH!
 		state = ERROR_STATE;
 		errors = AKKU_FALSCH_TIEF;
+		uartTxPstrln(PSTR("ERROR - Akku ist wohl Tiefentladen"));
 		// Meldung: akku tiefentladen oder falsche Ladeschlussspannung eingestellt
 		
 	} else { // normaler Modus; aktiviere Output und Regelschleife
 		// Output wird auf 5V weniger als die aktuell gemessene Spannung gesetzt.
+		uartTxPstrln(PSTR("Ladeparameter:"));
+		uartTxStr("Uend = ");
+		uartTxDec(modus_lader_ladeschlussspannung);
+		uartTxNewline();
+		uartTxStr("Imax = ");
+		uartTxDec(modus_lader_maximalstrom);
+		uartTxNewline();
+		uartTxStr("Iend = ");
+		uartTxDec(modus_lader_strom_ende);
+		uartTxNewline();
+		
 		setPowerOutput(tempspannung);
 		delayms(200);
 		display_clear();
@@ -502,6 +515,7 @@ void ladung_regulation(void) {
 		spi_write_pstr(PSTR("Akku l"));
 		spi_write_char(ae);
 		spi_write_pstr(PSTR("dt auf!"));
+		uartTxPstrln(PSTR("Starte Netzgerät und lade den Akku"));
 		NT_ON(1); // Output ON
 		
 		// Betrete Regelschleife, in der die Spannung konstant gehalten wird.
@@ -522,6 +536,7 @@ void ladung_regulation(void) {
 			if (ilokal > imax) {
 				state = ERROR_STATE;
 				errors = OVERCURRENT_ERR;
+				uartTxPstrln(PSTR("ERROR - Überstrom beim Laden"));
 				NT_ON(0); // Netzteil AUS. Überstrom!
 				SPKR(1);
 				delayms(1000); // TÜÜT
@@ -531,6 +546,7 @@ void ladung_regulation(void) {
 			if (ulokal > umax) {
 				state = ERROR_STATE;
 				errors = OVERVOLTAGE_ERR;
+				uartTxPstrln(PSTR("ERROR - Überspannung beim Laden"));
 				NT_ON(0); // Netzteil AUS. Überspannung!
 				SPKR(1);
 				delayms(1000); // TÜÜT
@@ -551,9 +567,10 @@ void ladung_regulation(void) {
 				// Ladespannung (tempspannung) nicht ändern.
 				if (ilokal < modus_lader_strom_ende) { // Akku voll. BEENDE LADUNG
 					state = LADUNG_FERTIG;
-					uartTxStrln("LADUNG_FERTIG");
 					errors = NONE;
 					NT_ON(0);
+					uartTxPstrln(PSTR("ERFOLG - Akku fertig aufgeladen"));
+					uartTxPstrln(PSTR("Bestätigen mit ok"));
 					for (uint8_t i=0; i<5; i++) {
 						SPKR(1);
 						delayms(100);
@@ -828,6 +845,15 @@ folgendem Schema eingeben:\n\ru=xxxxx\n\ri=xxxxx\n\rmit Spannung in mV und Strom
 				display_set_row(0);
 				spi_write_pstr(PSTR(" Ladung fertig! "));
 				// Leistungswerte bleiben vorerst bestehen.
+				if (uartAktuell) {
+					delayms(100);
+					uartAktuell = 0;
+					if (strcmp(tempstring, "ok") == 0) {
+						// Starte Ladung
+						state = MODUS_LADER;
+						uartTxPstrln(PSTR("Kehre zurück zum Lader-Menü"));
+					}
+				}
 				if (knopf_losgelassen()) {
 					state = MODUS_LADER;
 				}
