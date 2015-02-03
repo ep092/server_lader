@@ -216,11 +216,13 @@ ISR (PCINT2_vect, ISR_BLOCK) {
 }
 
 // UART Receive Complete Interrupt
-volatile char empfangsdaten[21], tempstring[21];
-volatile uint8_t uartAktuell = 0;
+volatile char empfangsdaten[21], tempstring[21], tempchar = 0;
+volatile uint8_t uartAktuell = 0, uartLastChar = 0;
 ISR (USART_RX_vect, ISR_BLOCK) {
 	static uint8_t position = 0;
 	char rx = UDR;
+	tempchar = rx;
+	uartLastChar = 1; // Ein Zeichen empfangen
 	
 	// remote echo ist wichtig.
 	uartTx(rx);
@@ -230,13 +232,14 @@ ISR (USART_RX_vect, ISR_BLOCK) {
 		empfangsdaten[position] = rx;
 	}
 	
-	if ((position == 20) || rx == 0x0D) {
+	if ((position == 20) || rx == 0x0D || rx == '\n') {
 		strcpy (tempstring, empfangsdaten);
 		for(uint8_t i=0; i<21; i++) {
 			empfangsdaten[i] = 0; // lösche empfangsdaten
 		}
 		position = 0;
 		uartAktuell = 1;
+		uartLastChar = 0;
 	} else {
 		position++;
 	}
@@ -374,7 +377,7 @@ void netzteil_regulation(void) {
 	sei();
 	errors = NONE; // lösche Fehlerspeicher
 	STROMOFFSET = ilokal; // Offset wird beim Start des Netzteils rauskalibriert.
-	uint8_t regelspannung = 0;
+	uint8_t regelspannung = 0, run = 1;
 	if (netzgeraet_spannung > 6000) {
 		setPowerOutput(netzgeraet_spannung - 6000);
 	} else {
@@ -385,12 +388,15 @@ void netzteil_regulation(void) {
 	spi_write_char(ae);
 	spi_write_pstr(PSTR("t AKTIV "));
 	delayms(500);
+	uartTxPstrln(PSTR("Netzgerät schaltet Ausgänge an"));
+	uartTxPstrln(PSTR("Bedienung: Spannung verringern mit -, erhöhen mit +"));
+	uartTxPstrln(PSTR("Verlassen des Netzteilmodus mit Knopfdruck auf x"));
 	NT_ON(1); // Output ON
 // 	delayms(400);
 	
 	// Betrete Regelschleife, in der die Spannung konstant gehalten wird.
 	// wenn Knopf gedrückt oder Error passiert, wieder NT-Modus verlassen
-	while ((knopf_losgelassen() == 0) && (state != ERROR_STATE)) {
+	while ((knopf_losgelassen() == 0) && (state != ERROR_STATE) && run) {
 		
 		cli();
 		ulokal = uNetzteil;
@@ -408,6 +414,7 @@ void netzteil_regulation(void) {
 			NT_ON(0); // Netzteil AUS. Überstrom!
 			state = ERROR_STATE;
 			errors = OVERCURRENT_ERR;
+			uartTxPstrln(PSTR("ERROR - Strom weit über eingestelltes Limit gestiegen!"));
 			SPKR(1);
 			delayms(1000); // TÜÜT
 			SPKR(0);
@@ -418,6 +425,7 @@ void netzteil_regulation(void) {
 			NT_ON(0); // Netzteil AUS. Überspannung!
 			state = ERROR_STATE;
 			errors = OVERVOLTAGE_ERR;
+			uartTxPstrln(PSTR("ERROR - Überspannung!"));
 			SPKR(1);
 			delayms(1000); // TÜÜT
 			SPKR(0);
@@ -443,11 +451,39 @@ void netzteil_regulation(void) {
 			netzgeraet_spannung = netzgeraet_spannung + 100;
 		}
 		
+		if (uartLastChar) {
+			uartLastChar = 0;
+			switch (tempchar) {
+				case 'x':
+					run = 0;
+				break;
+				
+				case '+':
+					if ((netzgeraet_spannung + 100) < MAXIMALSPANNUNG) {
+						netzgeraet_spannung = netzgeraet_spannung + 100;
+					}
+				break;
+				
+				case '-':
+					if (netzgeraet_spannung > 100) {
+						netzgeraet_spannung = netzgeraet_spannung - 100;
+					}
+				break;
+				default :
+					;
+				break;
+			}
+		}
+		
+		// Text überschreibt sich auch hier selber
 		uartTxStr("U=");
 		uartTxDec(ulokal);
 		uartTxStr(" mV, I=");
 		uartTxDec(ilokal);
-		uartTxStrln(" mA");
+		uartTxStr(" mA, Imax=");
+		uartTxDec(netzgeraet_strom);
+		uartTxStr(" mA     ");
+		uartTx(0x0D);
 		
 		if (((netzgeraet_spannung - 300) + regelspannung * 8) > MAXIMALSPANNUNG) {
 			; // do nothing.
@@ -458,6 +494,7 @@ void netzteil_regulation(void) {
 	// ENDE. Netzteil wird abgeschaltet und State verlassen
 	if (errors == NONE) {
 		state = MODUS_NETZGERAET;
+		uartTxPstrln(PSTR("Netzteil wieder ausgeschaltet - kehre zum Menü zurück"));
 	}
 	NT_ON(0);
 	delayms(100);
@@ -583,13 +620,15 @@ void ladung_regulation(void) {
 					tempspannung -=100;
 				}
 			}
+// 			keine neue Zeile nach der Meldung - Text überschreibt sich selbst.
 			uartTxStr("U=");
 			uartTxDec(ulokal);
 			uartTxStr(" mV, I=");
 			uartTxDec(ilokal);
 			uartTxStr(" mA, C=");
 			uartTxDec((uint16_t)fuellstand);
-			uartTxStrln(" mAh");
+			uartTxStr(" mAh      ");
+			uartTx(0x0D); // wagenrücklauf ohne neue Zeile!!!
 			
 			if (ulokal > modus_lader_ladeschlussspannung) {
 				; // CV mode, noch warten bis I klein genug
@@ -825,6 +864,40 @@ folgendem Schema eingeben:\n\ru=xxxxx\n\ri=xxxxx\n\rmit Spannung in mV und Strom
 						}
 						break;
 				}
+				if (uartAktuell) {
+					delayms(100);
+					uartAktuell = 0;
+					if (strcmp(tempstring, "ok") == 0) {
+						// Starte Netzgerät
+						state = REGELUNG_NETZGERAET;
+					}
+					
+					if (strcmp(tempstring, "z") == 0) {
+						// gehe zurück zur Auswahl
+						state = AUSWAHL;
+						uartTxPstrln(PSTR("AUSWAHL"));
+					}
+					
+					if ((strcmp(tempstring, "u=") > 0) && (modus_netzgeraet_auswahl != 2)) {
+						// Ausgangsspannung einstellen...
+						netzgeraet_spannung = 0;
+						netzgeraet_spannung += 10000*(tempstring[2]-0x30);
+						netzgeraet_spannung += 1000 *(tempstring[3]-0x30);
+						netzgeraet_spannung += 100  *(tempstring[4]-0x30);
+						uartTxPstr(PSTR("Ausgangsspannung: "));
+						uartTxDec(netzgeraet_spannung);
+						uartTxStrln(" mV");
+					} else if ((strcmp(tempstring, "i=") > 0) && (modus_netzgeraet_auswahl != 2)) {
+						// Ladestrom einstellen
+						netzgeraet_strom = 0;
+						netzgeraet_strom += 10000*(tempstring[2]-0x30);
+						netzgeraet_strom += 1000 *(tempstring[3]-0x30);
+						netzgeraet_strom += 100  *(tempstring[4]-0x30);
+						uartTxPstr(PSTR("Maximaler Ausgangsstrom: "));
+						uartTxDec(netzgeraet_strom);
+						uartTxStrln(" mA");
+					}
+				}
 				break;
 				
 			case REGELUNG_NETZGERAET:
@@ -860,7 +933,12 @@ folgendem Schema eingeben:\n\ru=xxxxx\n\ri=xxxxx\n\rmit Spannung in mV und Strom
 				break;
 				
 			case ERROR_STATE:
-				uartTxPstrln(PSTR("ERROR_STATE"));
+				;
+				uint8_t w = 0;
+				if (w == 0) {
+					uartTxPstrln(PSTR("ERROR_STATE"));
+					w = 1;
+				}
 				NT_ON(0);
 				display_clear();
 				spi_write_pstr(PSTR("FEHLER!"));
@@ -893,9 +971,9 @@ folgendem Schema eingeben:\n\ru=xxxxx\n\ri=xxxxx\n\rmit Spannung in mV und Strom
 				delayms(100);
 				if (knopf_losgelassen() || uartAktuell) {
 					delayms(100);
+					uartTxPstrln(PSTR("Lösche Fehlercodes und kehre zur Auswahl zurück..."));
 					uartAktuell = 0;
 					state = AUSWAHL;
-					uartTxPstrln(PSTR("AUSWAHL"));
 					errors = NONE; // Lösche Fehlercode
 				}
 				break;
