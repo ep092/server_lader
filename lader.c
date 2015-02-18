@@ -227,23 +227,25 @@ ISR (USART_RX_vect, ISR_BLOCK) {
 	// remote echo ist wichtig.
 	uartTx(rx);
 	
-	// nur schreibbare Zeichen in den Puffer übernehmen
-	if ((rx != 0x0A) && (rx != 0x0D)) {
-		empfangsdaten[position] = rx;
-	}
-	
-	if ((position == 20) || rx == 0x0D || rx == '\n') {
-		strcpy (tempstring, empfangsdaten);
-		for(uint8_t i=0; i<21; i++) {
-			empfangsdaten[i] = 0; // lösche empfangsdaten
+	// nur schreibbare Zeichen in den Puffer übernehmen, wenn die
+	// letzten Daten schon abgeholt wurden.
+	if (uartAktuell == 0) {
+		if ((rx != 0x0A) && (rx != 0x0D)) {
+			empfangsdaten[position] = rx;
 		}
-		position = 0;
-		uartAktuell = 1;
-		uartLastChar = 0;
-	} else {
-		position++;
+		
+		if ((position == 20) || rx == 0x0D || rx == '\n') {
+			strcpy (tempstring, empfangsdaten);
+			for(uint8_t i=0; i<21; i++) {
+				empfangsdaten[i] = 0; // lösche empfangsdaten
+			}
+			position = 0;
+			uartAktuell = 1;
+			uartLastChar = 0;
+		} else {
+			position++;
+		}
 	}
-
 }
 
 
@@ -410,7 +412,7 @@ void netzteil_regulation(void) {
 		sprintf(display, "I_out: %5u mA ", ilokal); // Laststrom anzeigen
 		spi_write_string(display);
 		
-		if (ilokal > (netzgeraet_strom)) {
+		if (ilokal > netzgeraet_strom) {
 			NT_ON(0); // Netzteil AUS. Überstrom!
 			state = ERROR_STATE;
 			errors = OVERCURRENT_ERR;
@@ -665,7 +667,7 @@ void stateMachine(void) {
 					}
 				}
 				state = AUSWAHL;
-				uartTxPstrln(PSTR("AUSWAHL"));
+				uartTxPstrln(PSTR("MODUS WÄHLEN:"));
 				uartTxPstrln(PSTR("möglich sind die Eingaben netzteil und lader"));
 				break;
 				
