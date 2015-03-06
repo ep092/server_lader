@@ -1,5 +1,5 @@
 //  *    Filename: lader.c
-//  *     Version: 0.2.0
+//  *     Version: 0.2.2
 //  * Description: Regelung für Ladung von riesigen Akkus!
 //  *     License: GPLv3 or later
 //  *     Depends: global.h, io.h, interrupt.h
@@ -216,25 +216,25 @@ ISR (PCINT2_vect, ISR_BLOCK) {
 }
 
 // UART Receive Complete Interrupt
-volatile char empfangsdaten[21], tempstring[21], tempchar = 0;
+volatile char tempstring[21], tempchar = 0;
 volatile uint8_t uartAktuell = 0, uartLastChar = 0;
 ISR (USART_RX_vect, ISR_BLOCK) {
 	static uint8_t position = 0;
-	char rx = UDR;
-	tempchar = rx;
+	static char empfangsdaten[21];
+	tempchar = UDR;
 	uartLastChar = 1; // Ein Zeichen empfangen
 	
-	// remote echo ist wichtig.
-	uartTx(rx);
-	
-	// nur schreibbare Zeichen in den Puffer übernehmen, wenn die
-	// letzten Daten schon abgeholt wurden.
+	// nur schreibbare Zeichen in den Puffer übernehmen, wenn das letzte Frame
+	// schon verarbeitet wurde.
 	if (uartAktuell == 0) {
-		if ((rx != 0x0A) && (rx != 0x0D)) {
-			empfangsdaten[position] = rx;
-		}
-		
-		if ((position == 20) || rx == 0x0D || rx == '\n') {
+		if (tempchar >= 0x21) {
+			empfangsdaten[position] = tempchar;
+			position++;
+			
+			// remote echo nur für Zeichen, die in den Puffer übernommen werden
+			uartTx(tempchar);
+		}		
+		if ((position == 20) || tempchar == 0x0D || tempchar == '\n') {
 			strcpy (tempstring, empfangsdaten);
 			for(uint8_t i=0; i<21; i++) {
 				empfangsdaten[i] = 0; // lösche empfangsdaten
@@ -242,8 +242,6 @@ ISR (USART_RX_vect, ISR_BLOCK) {
 			position = 0;
 			uartAktuell = 1;
 			uartLastChar = 0;
-		} else {
-			position++;
 		}
 	}
 }
@@ -258,7 +256,7 @@ ISR (USART_RX_vect, ISR_BLOCK) {
 #define MITTELWERTE 4
 
 ISR (ADC_vect, ISR_BLOCK) {
-	// 	uartTxStrln("adc");
+	// uartTxStrln("adc");
 	// ADC-Auslesungen und Rechnung mit Gleitmittelwert über 4 Werte
 	static uint16_t tabelle[3*MITTELWERTE]; // hier kommen die ADC-werte rein.
 	uint16_t temp=0;
@@ -372,6 +370,7 @@ uint16_t stromeinstellung(uint16_t lokalstrom) {
 
 void netzteil_regulation(void) {
 	uartTxStrln("Netzteil aktiv");
+	uartAktuell = 1;
 	STROMOFFSET = 0;
 	delayms(200);
 	cli();
@@ -455,7 +454,10 @@ void netzteil_regulation(void) {
 		
 		if (uartLastChar) {
 			uartLastChar = 0;
-			switch (tempchar) {
+			cli();
+			uint8_t zeichen = tempchar;
+			sei();
+			switch (zeichen) {
 				case 'x':
 					run = 0;
 				break;
@@ -504,14 +506,15 @@ void netzteil_regulation(void) {
 
 void ladung_regulation(void) {
 	uartTxPstrln(PSTR("LADEN_AKTIV"));
+	uartAktuell = 1;
 	// Lokale Schutzgrenzen - 10% über Lademaximalwerten
 	cli();
-	uint16_t ulokal = uNetzteil, ilokal; // werden aus uNetzteil und strom erzeugt, damit interrupts
+	uint16_t ulokal = uNetzteil, ilokal = 0; // werden aus uNetzteil und strom erzeugt, damit interrupts
+	// nicht die Regelung stören.
 	sei();
 	uint16_t umax = modus_lader_ladeschlussspannung + (modus_lader_ladeschlussspannung/10);
 	uint16_t imax = modus_lader_maximalstrom + (modus_lader_maximalstrom/5);
 	uint16_t tempspannung = ulokal - 1000; // Anfangsspannung ist 2V unter aktueller Akkuspannung
-	// nicht die Regelung stören.
 	energie = 0;
 	errors = NONE;
 	STROMOFFSET = 0;
@@ -654,21 +657,13 @@ void stateMachine(void) {
 	while (1) {
 		switch (state) {
 			case INIT_STATE:
-				uartTxPstrln(PSTR("INIT_STATE"));
 				spi_write_pstr(PSTR("   Guten Tag!     gebaut von    Toni und Philipp")); // Begrüßung
 				while (knopf_losgelassen() != 1) {
 					if (uartAktuell) {
-						if (strcmp(tempstring, "start") == 0) { // compare match!
-// 							uartTxStrln(tempstring);
-							delayms(100);
-							uartAktuell = 0;
-							break;
-						}
+						break;
 					}
 				}
 				state = AUSWAHL;
-				uartTxPstrln(PSTR("MODUS WÄHLEN:"));
-				uartTxPstrln(PSTR("möglich sind die Eingaben netzteil und lader"));
 				break;
 				
 			case AUSWAHL:
@@ -688,22 +683,6 @@ void stateMachine(void) {
 						state=MODUS_NETZGERAET;
 						uartTxPstrln(PSTR("MODUS_NETZGERÄT"));
 						break;
-					}
-				}
-				if (uartAktuell) {
-					delayms(100);
-					uartAktuell = 0;
-					if (strcmp(tempstring, "lader") == 0) { // compare match!
-						state = MODUS_LADER;
-						uartTxPstrln(PSTR("MODUS_LADER"));
-						uartTxPstrln(PSTR("Spannung, Ladestrom und Abschaltstrom nach \
-folgendem Schema eingeben:\n\ru=xxxxx\n\ri1=xxxxx\n\ri2=xxxxx\n\rmit Spannung in mV und Strom in mA\n\rzurück zur Auswahl mit z, starten mit ok"));
-					}
-					if (strcmp(tempstring, "netzteil") == 0) { // compare match!
-						state = MODUS_NETZGERAET;
-						uartTxPstrln(PSTR("MODUS_NETZGERÄT"));
-						uartTxPstrln(PSTR("Spannung und Abschaltstrom nach \
-folgendem Schema eingeben:\n\ru=xxxxx\n\ri=xxxxx\n\rmit Spannung in mV und Strom in mA\n\rzurück zur Auswahl mit z, starten mit ok"));
 					}
 				}
 				display_clear();
@@ -769,51 +748,6 @@ folgendem Schema eingeben:\n\ru=xxxxx\n\ri=xxxxx\n\rmit Spannung in mV und Strom
 						}
 						break;
 				}
-				// UART Fernsteuerung
-				if (uartAktuell) {
-					delayms(100);
-					uartAktuell = 0;
-					if (strcmp(tempstring, "ok") == 0) {
-						// Starte Ladung
-						state = LADEN_AKTIV;
-						uartTxPstrln(PSTR("LADEN_AKTIV"));
-					}
-					
-					if (strcmp(tempstring, "z") == 0) {
-					// gehe zurück zur Auswahl
-						state = AUSWAHL;
-						uartTxPstrln(PSTR("AUSWAHL"));
-					}
-					
-					if ((strcmp(tempstring, "u=") > 0) && (state_lader != START)) {
-						// Ladeschlussspannung einstellen...
-						modus_lader_ladeschlussspannung = 0;
-						modus_lader_ladeschlussspannung += 10000*(tempstring[2]-0x30);
-						modus_lader_ladeschlussspannung += 1000 *(tempstring[3]-0x30);
-						modus_lader_ladeschlussspannung += 100  *(tempstring[4]-0x30);
-						uartTxPstr(PSTR("Ladeschlussspannung: "));
-						uartTxDec(modus_lader_ladeschlussspannung);
-						uartTxStrln(" mV");
-					} else if ((strcmp(tempstring, "i2=") > 0) && (state_lader != START)) {
-						// Ladeschlussstrom einstellen
-						modus_lader_strom_ende = 0;
-						modus_lader_strom_ende += 10000*(tempstring[3]-0x30);
-						modus_lader_strom_ende += 1000 *(tempstring[4]-0x30);
-						modus_lader_strom_ende += 100  *(tempstring[5]-0x30);
-						uartTxPstr(PSTR("Ladeschlussstrom:    "));
-						uartTxDec(modus_lader_strom_ende);
-						uartTxStrln(" mA");
-					} else if ((strcmp(tempstring, "i1=") > 0) && (state_lader != START)) {
-						// Ladestrom einstellen
-						modus_lader_maximalstrom = 0;
-						modus_lader_maximalstrom += 10000*(tempstring[3]-0x30);
-						modus_lader_maximalstrom += 1000 *(tempstring[4]-0x30);
-						modus_lader_maximalstrom += 100  *(tempstring[5]-0x30);
-						uartTxPstr(PSTR("Maximaler Ladestrom: "));
-						uartTxDec(modus_lader_maximalstrom);
-						uartTxStrln(" mA");
-					}
-				}
 				break;
 				
 			case MODUS_NETZGERAET:
@@ -851,7 +785,6 @@ folgendem Schema eingeben:\n\ru=xxxxx\n\ri=xxxxx\n\rmit Spannung in mV und Strom
 						if (knopf_losgelassen()) {
 							modus_netzgeraet_auswahl=0;
 							state = REGELUNG_NETZGERAET;
-							uartTxPstrln(PSTR("REGELUNG_NETZGERAET"));
 						}
 						break;
 						
@@ -862,43 +795,8 @@ folgendem Schema eingeben:\n\ru=xxxxx\n\ri=xxxxx\n\rmit Spannung in mV und Strom
 						if (knopf_losgelassen()) {
 							modus_netzgeraet_auswahl=0;
 							state = AUSWAHL;
-							uartTxPstrln(PSTR("AUSWAHL"));
 						}
 						break;
-				}
-				if (uartAktuell) {
-					delayms(100);
-					uartAktuell = 0;
-					if (strcmp(tempstring, "ok") == 0) {
-						// Starte Netzgerät
-						state = REGELUNG_NETZGERAET;
-					}
-					
-					if (strcmp(tempstring, "z") == 0) {
-						// gehe zurück zur Auswahl
-						state = AUSWAHL;
-						uartTxPstrln(PSTR("AUSWAHL"));
-					}
-					
-					if ((strcmp(tempstring, "u=") > 0) && (modus_netzgeraet_auswahl != 2)) {
-						// Ausgangsspannung einstellen...
-						netzgeraet_spannung = 0;
-						netzgeraet_spannung += 10000*(tempstring[2]-0x30);
-						netzgeraet_spannung += 1000 *(tempstring[3]-0x30);
-						netzgeraet_spannung += 100  *(tempstring[4]-0x30);
-						uartTxPstr(PSTR("Ausgangsspannung: "));
-						uartTxDec(netzgeraet_spannung);
-						uartTxStrln(" mV");
-					} else if ((strcmp(tempstring, "i=") > 0) && (modus_netzgeraet_auswahl != 2)) {
-						// Ladestrom einstellen
-						netzgeraet_strom = 0;
-						netzgeraet_strom += 10000*(tempstring[2]-0x30);
-						netzgeraet_strom += 1000 *(tempstring[3]-0x30);
-						netzgeraet_strom += 100  *(tempstring[4]-0x30);
-						uartTxPstr(PSTR("Maximaler Ausgangsstrom: "));
-						uartTxDec(netzgeraet_strom);
-						uartTxStrln(" mA");
-					}
 				}
 				break;
 				
@@ -920,15 +818,6 @@ folgendem Schema eingeben:\n\ru=xxxxx\n\ri=xxxxx\n\rmit Spannung in mV und Strom
 				display_set_row(0);
 				spi_write_pstr(PSTR(" Ladung fertig! "));
 				// Leistungswerte bleiben vorerst bestehen.
-				if (uartAktuell) {
-					delayms(100);
-					uartAktuell = 0;
-					if (strcmp(tempstring, "ok") == 0) {
-						// Starte Ladung
-						state = MODUS_LADER;
-						uartTxPstrln(PSTR("Kehre zurück zum Lader-Menü"));
-					}
-				}
 				if (knopf_losgelassen()) {
 					state = MODUS_LADER;
 				}
@@ -973,12 +862,86 @@ folgendem Schema eingeben:\n\ru=xxxxx\n\ri=xxxxx\n\rmit Spannung in mV und Strom
 				delayms(100);
 				if (knopf_losgelassen() || uartAktuell) {
 					delayms(100);
-					uartTxPstrln(PSTR("Lösche Fehlercodes und kehre zur Auswahl zurück..."));
+					uartTxPstrln(PSTR("Lösche Fehlercodes"));
 					uartAktuell = 0;
 					state = AUSWAHL;
 					errors = NONE; // Lösche Fehlercode
 				}
 				break;
+		}
+		// Fernsteuerung
+		// beispielhafte Zeile für LADER:    l,560,220,020\n
+		// Bedeutung: Modus,Ladeschlussspannung,Ladestrom,Ladeschlussstrom,newline
+		
+		// beispielhafte Zeile für NETZTEIL: n,240,100\n
+		// Bedeutung: Modus,Ausgangsspannung,Ausgangsstrom,newline
+		
+		// Spannungen werden hierbei in Vielfachen von 100mV, Ströme von 100mA angegeben
+		if (uartAktuell) {
+			static uint8_t remoteState = 0;
+			// 0 = nicht initialisiert, 1 = lader wartet auf bestätigung, 2 = netzteil wartet...
+			delayms(100);
+			uartAktuell = 0;
+			// Test auf Validität des Datenpakets
+			if ((tempstring[1] == ',') && (tempstring[5] == ',')) {
+				if (tempstring[0] == 'l') {
+					modus_lader_ladeschlussspannung = 0;
+					modus_lader_ladeschlussspannung += 10000*(tempstring[2]-0x30);
+					modus_lader_ladeschlussspannung += 1000 *(tempstring[3]-0x30);
+					modus_lader_ladeschlussspannung += 100  *(tempstring[4]-0x30);
+					
+					modus_lader_maximalstrom = 0;
+					modus_lader_maximalstrom += 10000*(tempstring[6]-0x30);
+					modus_lader_maximalstrom += 1000 *(tempstring[7]-0x30);
+					modus_lader_maximalstrom += 100  *(tempstring[8]-0x30);
+
+					modus_lader_strom_ende = 0;
+					modus_lader_strom_ende += 10000*(tempstring[10]-0x30);
+					modus_lader_strom_ende += 1000 *(tempstring[11]-0x30);
+					modus_lader_strom_ende += 100  *(tempstring[12]-0x30);
+					
+					// Sende Daten zur Überprüfung zurück
+					uartTxStr("l,");
+					uartTxDec(modus_lader_ladeschlussspannung);
+					uartTx(',');
+					uartTxDec(modus_lader_maximalstrom);
+					uartTx(',');
+					uartTxDec(modus_lader_strom_ende);
+					uartTxStrln("?");
+					
+					remoteState = 1;
+					
+				} else if (tempstring[0] == 'n') {
+					netzgeraet_spannung = 0;
+					netzgeraet_spannung += 10000*(tempstring[2]-0x30);
+					netzgeraet_spannung += 1000 *(tempstring[3]-0x30);
+					netzgeraet_spannung += 100  *(tempstring[4]-0x30);
+					
+					netzgeraet_strom = 0;
+					netzgeraet_strom += 10000*(tempstring[6]-0x30);
+					netzgeraet_strom += 1000 *(tempstring[7]-0x30);
+					netzgeraet_strom += 100  *(tempstring[8]-0x30);
+					
+					uartTxStr("n,");
+					uartTxDec(netzgeraet_spannung);
+					uartTx(',');
+					uartTxDec(netzgeraet_strom);
+					uartTxStrln("?");
+					
+					remoteState = 2;
+					
+				}
+				// hier kann man noch kalibrationsroutinen einbauen!
+				
+			} else if (tempstring[0] == 'y') {
+				if (remoteState == 1) {
+					state = LADEN_AKTIV;
+					remoteState = 0;
+				} else if (remoteState == 2) {
+					state = REGELUNG_NETZGERAET;
+					remoteState = 0;
+				}
+			}
 		}
 	}
 }
@@ -989,6 +952,9 @@ int main(void) {
 	DDRD  = 1<<PD1 | 1<<PD5 | 1<<PD6 | 1<<PD7;
 	// Pullups
 	PORTD = 1<<PD4;
+	
+	// Sicherer Start nach Boot des Geräts:
+	NT_ON(0);
 	
 	// Pinchange Interrupts für das Drehrad und den Knopf
 	// Knopf hängt am PCINT20 (PD4)
@@ -1020,10 +986,10 @@ int main(void) {
 	setPowerOutput(5000); // setze DAC, damit kein Überschwinger beim ersten Start passiert.
 	
 	uartTxPstrln(PSTR("Guten Tag!"));
-	uartTxPstrln(PSTR("REICH TIME"));
+// 	uartTxPstrln(PSTR("REICH TIME"));
 	uartTxNewline();
 	uartTxPstrln(PSTR("Hilfe: die Eingabe muss mittels Tastatur erfolgen, das Zeilenende \
-ist ein 0x0D, wie in GTKTERM üblich"));
+ist ein 0x0D"));
 	uartTxNewline();
 	
 	spi_write_string("   Guten Tag!     gebaut von    Toni und Philipp"); // Begrüßung
