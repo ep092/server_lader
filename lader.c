@@ -1,5 +1,5 @@
 //  *    Filename: lader.c
-//  *     Version: 0.2.2
+//  *     Version: 0.2.4
 //  * Description: Regelung für Ladung von riesigen Akkus!
 //  *     License: GPLv3 or later
 //  *     Depends: global.h, io.h, interrupt.h
@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <avr/pgmspace.h>
 #include <string.h>
+#include <avr/wdt.h>
 
 #include "../AtmelLib/global.h"
 #include "../AtmelLib/io/io.h"
@@ -48,6 +49,9 @@ uint8_t ERR = 0;
 #define UBRRL_VALUE 51
 #include "../AtmelLib/io/serial/uart.h"
 
+// #define OLED
+
+#ifndef OLED
 #define DISPLAY_RS_DDR   DDRD
 #define DISPLAY_RS_PORT	 PORTD
 #define DISPLAY_RS_PIN	 PD5
@@ -55,9 +59,14 @@ uint8_t ERR = 0;
 #define DISPLAY_CSB_PORT PORTD
 #define DISPLAY_CSB_PIN  PD6
 #include "EA_DOGM163L-A-Atmel-Lib/EA_DOGM163L-A.c"
+#endif
+
+#ifdef OLED
+// OLED-Lib einbinden
+#endif
 
 #define LED(x) out(PORTC,PC3,0,x)
-#define NT_ON(x) out(PORTB,PB0,0,x)
+// #define NT_ON(x) out(PORTB,PB0,0,x)
 #define SPKR(x) out(PORTD,PD7,0,x)
 #define SS_DAC(x) out(PORTB,PB2,0,x)
 
@@ -70,6 +79,7 @@ uint8_t ERR = 0;
 #define B_STEP_RECHTS ((knopf >>2) & 1) 
 #define RESET_STEP_RECHTS cbi(knopf, 2) 
 
+// Umlaute für das Display
 #define AE 0b10001110
 #define ae 0b10000100
 #define OE 0b10011001
@@ -138,6 +148,17 @@ void dacSetValue(uint16_t wert, uint8_t mode) {
 	while (!(SPSR & (1<<SPIF)));
 	SS_DAC(1);
 	SPCR = tempspcr;
+}
+
+void ntOn(uint8_t ausgang) {
+	// (PORTB,PB0,0,x)
+	if (ausgang == 0) {
+		cbi(PORTB, PB0);
+		wdt_disable();
+	} else {
+		wdt_enable(WDTO_500MS);
+		sbi(PORTB, PB0);
+	}
 }
 
 #define RFB 10000
@@ -392,8 +413,7 @@ void netzteil_regulation(void) {
 	uartTxPstrln(PSTR("Netzgerät schaltet Ausgänge an"));
 	uartTxPstrln(PSTR("Bedienung: Spannung verringern mit -, erhöhen mit +"));
 	uartTxPstrln(PSTR("Verlassen des Netzteilmodus mit Knopfdruck auf x"));
-	NT_ON(1); // Output ON
-// 	delayms(400);
+	ntOn(1); // Output ON
 	
 	// Betrete Regelschleife, in der die Spannung konstant gehalten wird.
 	// wenn Knopf gedrückt oder Error passiert, wieder NT-Modus verlassen
@@ -412,7 +432,7 @@ void netzteil_regulation(void) {
 		spi_write_string(display);
 		
 		if (ilokal > netzgeraet_strom) {
-			NT_ON(0); // Netzteil AUS. Überstrom!
+			ntOn(0); // Netzteil AUS. Überstrom!
 			state = ERROR_STATE;
 			errors = OVERCURRENT_ERR;
 			uartTxPstrln(PSTR("ERROR - Strom weit über eingestelltes Limit gestiegen!"));
@@ -423,7 +443,7 @@ void netzteil_regulation(void) {
 			
 		}
 		if (ulokal > (netzgeraet_spannung + 1000)) {
-			NT_ON(0); // Netzteil AUS. Überspannung!
+			ntOn(0); // Netzteil AUS. Überspannung!
 			state = ERROR_STATE;
 			errors = OVERVOLTAGE_ERR;
 			uartTxPstrln(PSTR("ERROR - Überspannung!"));
@@ -494,13 +514,14 @@ void netzteil_regulation(void) {
 		} else {
 			setPowerOutput((netzgeraet_spannung - 300) + regelspannung * 12);
 		}
+		wdt_reset();
 	}
 	// ENDE. Netzteil wird abgeschaltet und State verlassen
 	if (errors == NONE) {
 		state = MODUS_NETZGERAET;
 		uartTxPstrln(PSTR("Netzteil wieder ausgeschaltet - kehre zum Menü zurück"));
 	}
-	NT_ON(0);
+	ntOn(0);
 	delayms(100);
 }
 
@@ -517,7 +538,7 @@ void ladung_regulation(void) {
 	uint16_t tempspannung = ulokal - 1000; // Anfangsspannung ist 2V unter aktueller Akkuspannung
 	energie = 0;
 	errors = NONE;
-	STROMOFFSET = 0;
+// 	STROMOFFSET = 0;
 	delayms(1000);
 	ilokal = strom;
 	STROMOFFSET = ilokal;
@@ -558,7 +579,7 @@ void ladung_regulation(void) {
 		spi_write_char(ae);
 		spi_write_pstr(PSTR("dt auf!"));
 		uartTxPstrln(PSTR("Starte Netzgerät und lade den Akku"));
-		NT_ON(1); // Output ON
+		ntOn(1); // Output ON
 		
 		// Betrete Regelschleife, in der die Spannung konstant gehalten wird.
 		// wenn Knopf gedrückt oder Error passiert, wieder NT-Modus verlassen
@@ -579,7 +600,7 @@ void ladung_regulation(void) {
 				state = ERROR_STATE;
 				errors = OVERCURRENT_ERR;
 				uartTxPstrln(PSTR("ERROR - Überstrom beim Laden"));
-				NT_ON(0); // Netzteil AUS. Überstrom!
+				ntOn(0); // Netzteil AUS. Überstrom!
 				SPKR(1);
 				delayms(1000); // TÜÜT
 				SPKR(0);
@@ -589,7 +610,7 @@ void ladung_regulation(void) {
 				state = ERROR_STATE;
 				errors = OVERVOLTAGE_ERR;
 				uartTxPstrln(PSTR("ERROR - Überspannung beim Laden"));
-				NT_ON(0); // Netzteil AUS. Überspannung!
+				ntOn(0); // Netzteil AUS. Überspannung!
 				SPKR(1);
 				delayms(1000); // TÜÜT
 				SPKR(0);
@@ -610,7 +631,7 @@ void ladung_regulation(void) {
 				if (ilokal < modus_lader_strom_ende) { // Akku voll. BEENDE LADUNG
 					state = LADUNG_FERTIG;
 					errors = NONE;
-					NT_ON(0);
+					ntOn(0);
 					uartTxPstrln(PSTR("ERFOLG - Akku fertig aufgeladen"));
 					uartTxPstrln(PSTR("Bestätigen mit ok"));
 					for (uint8_t i=0; i<5; i++) {
@@ -641,10 +662,11 @@ void ladung_regulation(void) {
 				setPowerOutput(tempspannung);
 				delayms(10); // Erhöhung der Regelzeitkonstate
 			}
+			wdt_reset();
 		}
 	}
 	// Akku voll oder Error Abbruch
-	NT_ON(0);
+	ntOn(0);
 	delayms(100);
 	if (state == LADEN_AKTIV) { // Ladungsabbruch durch Knopfdruck
 		state = MODUS_LADER;
@@ -803,14 +825,14 @@ void stateMachine(void) {
 			case REGELUNG_NETZGERAET:
 				netzteil_regulation();
 				// Funktion verlassen; Netzteilausgang wird wieder ausgeschaltet.
-				NT_ON(0);
+				ntOn(0);
 				delayms(100);
 				break;
 				
 			case LADEN_AKTIV:
 				ladung_regulation();
 				// Funktion verlassen; Netzteilausgang wird wieder ausgeschaltet.
-				NT_ON(0);
+				ntOn(0);
 				delayms(100);
 				break;
 				
@@ -825,12 +847,12 @@ void stateMachine(void) {
 				
 			case ERROR_STATE:
 				;
-				uint8_t w = 0;
+				static uint8_t w = 0;
 				if (w == 0) {
 					uartTxPstrln(PSTR("ERROR_STATE"));
 					w = 1;
 				}
-				NT_ON(0);
+				ntOn(0);
 				display_clear();
 				spi_write_pstr(PSTR("FEHLER!"));
 				display_set_row(1);
@@ -866,6 +888,7 @@ void stateMachine(void) {
 					uartAktuell = 0;
 					state = AUSWAHL;
 					errors = NONE; // Lösche Fehlercode
+					w = 0;
 				}
 				break;
 		}
@@ -877,6 +900,7 @@ void stateMachine(void) {
 		// Bedeutung: Modus,Ausgangsspannung,Ausgangsstrom,newline
 		
 		// Spannungen werden hierbei in Vielfachen von 100mV, Ströme von 100mA angegeben
+		// Werte müssen inclusive führender Nullen eingegeben werden!
 		if (uartAktuell) {
 			static uint8_t remoteState = 0;
 			// 0 = nicht initialisiert, 1 = lader wartet auf bestätigung, 2 = netzteil wartet...
@@ -941,6 +965,11 @@ void stateMachine(void) {
 					state = REGELUNG_NETZGERAET;
 					remoteState = 0;
 				}
+			} else if (tempstring[0] == 's') { // Statusausgabe
+				uartTxNewline();
+				uartTxPstr(PSTR("gemessene Spannung: "));
+				uartTxDec(uNetzteil);
+				uartTxPstrln(PSTR(" mV"));
 			}
 		}
 	}
@@ -954,7 +983,7 @@ int main(void) {
 	PORTD = 1<<PD4;
 	
 	// Sicherer Start nach Boot des Geräts:
-	NT_ON(0);
+	ntOn(0);
 	
 	// Pinchange Interrupts für das Drehrad und den Knopf
 	// Knopf hängt am PCINT20 (PD4)
