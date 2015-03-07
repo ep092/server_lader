@@ -200,7 +200,7 @@ ISR (TIMER1_COMPA_vect, ISR_BLOCK) {
 	zaehler++;
 	if (zaehler == 100) { // es ist eine Sekunde vergangen!
 		energie += ((float)strom * (float)uNetzteil) /1000; // in Wattsekunden
-		fuellstand += (float)strom /1000; // in Amperesekunden
+		fuellstand += (float)strom /3600; // in mAh
 		zaehler = 0;
 	}
 }
@@ -641,9 +641,19 @@ void ladung_regulation(void) {
 						delayms(500);
 					}
 				}
-				if (ulokal > (modus_lader_ladeschlussspannung + 100)) {
-					// wenn durch transiente Effekte tempspannung zu hoch wurde...
+				if (ulokal > (modus_lader_ladeschlussspannung + 100) || (ilokal > modus_lader_maximalstrom + 100)) {
+					// wenn durch transiente Effekte tempspannung oder Ladestrom zu hoch wurde...
 					tempspannung -=100;
+				}
+			}
+			if (uartLastChar) {
+				uartLastChar = 0;
+				if (tempchar == 'x') {
+					state = AUSWAHL;
+					uartTxPstrln(PSTR("Ladung abgebrochen - kehre zurück ins Hauptmenü"));
+					errors = NONE;
+					ntOn(0);
+					continue;
 				}
 			}
 // 			keine neue Zeile nach der Meldung - Text überschreibt sich selbst.
@@ -652,7 +662,7 @@ void ladung_regulation(void) {
 			uartTxStr(" mV, I=");
 			uartTxDec(ilokal);
 			uartTxStr(" mA, C=");
-			uartTxDec((uint16_t)fuellstand);
+			uartTxDec((uint32_t)fuellstand);
 			uartTxStr(" mAh      ");
 			uartTx(0x0D); // wagenrücklauf ohne neue Zeile!!!
 			
