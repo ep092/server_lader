@@ -103,7 +103,7 @@ typedef enum {
 typedef enum { // Die verschiedenen Errorgründe.
 	OVERVOLTAGE_ERR, OVERCURRENT_ERR, OVERPOWER_ERR, OVERTEMP1_ERR,
 	OVERTEMP2_ERR, TIEFENTLADEN, AKKU_FALSCH_HOCH, AKKU_FALSCH_TIEF,
-	NONE
+	NONE, REGLER_RAMP_UP
 } state_errors;
 
 state_main state = INIT_STATE;
@@ -392,14 +392,17 @@ uint16_t stromeinstellung(uint16_t lokalstrom) {
 void netzteil_regulation(void) {
 	uartTxStrln("Netzteil aktiv");
 	uartAktuell = 1;
-	STROMOFFSET = 0;
+// 	STROMOFFSET = 0;
 	delayms(200);
 	cli();
-	uint16_t ulokal = uNetzteil, ilokal = strom, regelspannung = 0;
+	uint16_t ulokal = uNetzteil, ilokal = strom;
 	sei();
 	errors = NONE; // lösche Fehlerspeicher
 	STROMOFFSET = ilokal; // Offset wird beim Start des Netzteils rauskalibriert.
+	int regelspannung = 0;
 	uint8_t run = 1;
+	// Voreinstellung des DACs, damit dieser keinen zu großen Sprung ausführen muss
+	// TODO: prüfen ob das nötig ist.
 	if (netzgeraet_spannung > 6000) {
 		setPowerOutput(netzgeraet_spannung - 6000);
 	} else {
@@ -442,7 +445,7 @@ void netzteil_regulation(void) {
 			continue;
 			
 		}
-		if (ulokal > (netzgeraet_spannung + 1000)) {
+		if (ulokal > (netzgeraet_spannung + 1500)) {
 			ntOn(0); // Netzteil AUS. Überspannung!
 			state = ERROR_STATE;
 			errors = OVERVOLTAGE_ERR;
@@ -454,15 +457,25 @@ void netzteil_regulation(void) {
 			
 		}
 		if (ulokal - 100 > netzgeraet_spannung) { // Ausgangsspannung zu hoch
-			if (regelspannung >= 1) {
+			if (regelspannung > 0) {
 				regelspannung--;
 			}
 			delayms(1); // Zeitkonstante künstlich erhöht, damit Regelung nicht schwingt.
 			
 		}
 		if (ulokal + 100 < netzgeraet_spannung) { // Ausgangsspannung zu klein
-			if (regelspannung < (0xFFFF-1)) {
+			if (regelspannung < 256) {
 				regelspannung++;
+			} else {
+				// Regler Ramp-up Error!
+				ntOn(0);
+				state = ERROR_STATE;
+				errors = REGLER_RAMP_UP;
+				uartTxPstrln(PSTR("Regler zu weit aufgedreht - evtl. Spannungsmessung defekt"));
+				SPKR(1);
+				delayms(1000); // TÜÜT
+				SPKR(0);
+				continue;
 			}
 			delayms(1);
 		}
@@ -890,6 +903,9 @@ void stateMachine(void) {
 						break;
 					case AKKU_FALSCH_TIEF:
 						spi_write_pstr(PSTR("Akku tiefentladen!"));
+						break;
+					case REGLER_RAMP_UP:
+						spi_write_pstr(PSTR("Regler zu weit  aufgedreht!"));
 						break;
 					default:
 						spi_write_pstr(PSTR("Komischer Fehleraufgetreten..."));
