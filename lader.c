@@ -392,7 +392,8 @@ uint16_t stromeinstellung(uint16_t lokalstrom) {
 void netzteil_regulation(void) {
 	uartTxStrln("Netzteil aktiv");
 	uartAktuell = 1;
-// 	STROMOFFSET = 0;
+// 	nötig zur Kalibrierung!
+	STROMOFFSET = 0;
 	delayms(200);
 	cli();
 	uint16_t ulokal = uNetzteil, ilokal = strom;
