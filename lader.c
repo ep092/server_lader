@@ -395,11 +395,11 @@ void netzteil_regulation(void) {
 	STROMOFFSET = 0;
 	delayms(200);
 	cli();
-	uint16_t ulokal = uNetzteil, ilokal = strom;
+	uint16_t ulokal = uNetzteil, ilokal = strom, regelspannung = 0;
 	sei();
 	errors = NONE; // lösche Fehlerspeicher
 	STROMOFFSET = ilokal; // Offset wird beim Start des Netzteils rauskalibriert.
-	uint8_t regelspannung = 0, run = 1;
+	uint8_t run = 1;
 	if (netzgeraet_spannung > 6000) {
 		setPowerOutput(netzgeraet_spannung - 6000);
 	} else {
@@ -454,12 +454,16 @@ void netzteil_regulation(void) {
 			
 		}
 		if (ulokal - 100 > netzgeraet_spannung) { // Ausgangsspannung zu hoch
-			regelspannung--;
+			if (regelspannung >= 1) {
+				regelspannung--;
+			}
 			delayms(1); // Zeitkonstante künstlich erhöht, damit Regelung nicht schwingt.
 			
 		}
 		if (ulokal + 100 < netzgeraet_spannung) { // Ausgangsspannung zu klein
-			regelspannung++;
+			if (regelspannung < (0xFFFF-1)) {
+				regelspannung++;
+			}
 			delayms(1);
 		}
 		
