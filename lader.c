@@ -1,5 +1,5 @@
 //  *    Filename: lader.c
-//  *     Version: 0.2.4
+//  *     Version: 0.2.5
 //  * Description: Regelung für Ladung von riesigen Akkus!
 //  *     License: GPLv3 or later
 //  *     Depends: global.h, io.h, interrupt.h
@@ -113,9 +113,10 @@ state_errors errors = NONE;
 uint16_t netzgeraet_spannung = 32000;
 uint16_t netzgeraet_strom = 12000;
 
-uint16_t modus_lader_ladeschlussspannung = 21000;
-uint16_t modus_lader_maximalstrom = 2000;
-uint16_t modus_lader_strom_ende = 300;
+// Anpassungen für das EL mit 2*34 NiCd Zellen
+uint16_t modus_lader_ladeschlussspannung = 55000;
+uint16_t modus_lader_maximalstrom = 48000;
+uint16_t modus_lader_strom_ende = 4000;
 
 char display[17];
 
@@ -547,6 +548,8 @@ void ladung_regulation(void) {
 	uartTxPstrln(PSTR("LADEN_AKTIV"));
 	uartAktuell = 1;
 	// Lokale Schutzgrenzen - 10% über Lademaximalwerten
+	STROMOFFSET = 0;
+	delayms(200);
 	cli();
 	uint16_t ulokal = uNetzteil, ilokal = 0; // werden aus uNetzteil und strom erzeugt, damit interrupts
 	// nicht die Regelung stören.
@@ -556,10 +559,8 @@ void ladung_regulation(void) {
 	uint16_t tempspannung = ulokal - 1000; // Anfangsspannung ist 2V unter aktueller Akkuspannung
 	energie = 0;
 	errors = NONE;
-// 	STROMOFFSET = 0;
 	delayms(1000);
-	ilokal = strom;
-	STROMOFFSET = ilokal;
+	STROMOFFSET = strom; // calibrate
 	
 	if (ulokal > modus_lader_ladeschlussspannung) { // Akku schon voll oder falsche Einstellungen!
 		// ABBRUCH!
