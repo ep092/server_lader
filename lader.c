@@ -234,6 +234,7 @@ ISR (PCINT2_vect, ISR_BLOCK) {
 		cbi(knopf, 1); // lösche gedrückt-Bit wieder
 	} else { // Knopf gedrückt, warte auf loslassen
 		sbi(knopf, 1); // setze gedrückt-Bit
+		cbi(knopf, 0); //lösche losgelassen bit wenn taster gedrückt ist
 	}
 }
 
@@ -324,6 +325,11 @@ ISR (ADC_vect, ISR_BLOCK) {
 
 uint8_t knopf_losgelassen(void) {
 	uint8_t return_value = B_KNOPF_LOSGELASSEN;
+	delayms(10);
+	if (return_value != B_KNOPF_LOSGELASSEN){	//entprellen
+		return_value = B_KNOPF_LOSGELASSEN;
+	}
+		
 	if(return_value){
 		SPKR(1);
 		delayms(10);
