@@ -384,7 +384,7 @@ uint16_t spannungseinstellung(uint16_t lokalspannung) {
 
 uint16_t stromeinstellung(uint16_t lokalstrom) {
 	while(knopf_losgelassen()!=1){
-		sprintf(display, "Uout: %5umA ", lokalstrom);
+		sprintf(display, "Iout: %5umA ", lokalstrom);
 		display_set_row(2);
 		spi_write_string(display);
 		if (step_links()){
