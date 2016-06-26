@@ -1,4 +1,5 @@
 EESchema Schematic File Version 2
+LIBS:server_lader-rescue
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -10,7 +11,6 @@ LIBS:cmos4000
 LIBS:adc-dac
 LIBS:memory
 LIBS:xilinx
-LIBS:special
 LIBS:microcontrollers
 LIBS:dsp
 LIBS:microchip
@@ -29,7 +29,6 @@ LIBS:opto
 LIBS:atmel
 LIBS:contrib
 LIBS:valves
-LIBS:toni
 LIBS:server_lader-cache
 EELAYER 25 0
 EELAYER END
@@ -46,7 +45,7 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L ATMEGA168PA-A IC1
+L ATMEGA168PA-A-RESCUE-server_lader IC1
 U 1 1 545FB3DD
 P 2700 2600
 F 0 "IC1" H 1950 3850 40  0000 L BNN
@@ -90,7 +89,7 @@ F 3 "" H 1800 1800 60  0000 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L GND #PWR04
+L GND-RESCUE-server_lader #PWR04
 U 1 1 545FB459
 P 1800 3600
 F 0 "#PWR04" H 1800 3600 30  0001 C CNN
@@ -101,7 +100,7 @@ F 3 "" H 1800 3600 60  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L GND #PWR05
+L GND-RESCUE-server_lader #PWR05
 U 1 1 545FB46C
 P 1800 3700
 F 0 "#PWR05" H 1800 3700 30  0001 C CNN
@@ -112,7 +111,7 @@ F 3 "" H 1800 3700 60  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L GND #PWR06
+L GND-RESCUE-server_lader #PWR06
 U 1 1 545FB478
 P 1800 3800
 F 0 "#PWR06" H 1800 3800 30  0001 C CNN
@@ -153,7 +152,7 @@ F 3 "" H 2850 3400 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR08
+L GND-RESCUE-server_lader #PWR08
 U 1 1 545FB9A6
 P 3100 4700
 F 0 "#PWR08" H 3100 4700 30  0001 C CNN
@@ -183,7 +182,7 @@ F 3 "" H 4650 3150 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR09
+L GND-RESCUE-server_lader #PWR09
 U 1 1 545FBB0B
 P 4450 3000
 F 0 "#PWR09" H 4450 3000 30  0001 C CNN
@@ -205,7 +204,7 @@ F 3 "" H 4450 3300 60  0000 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L GND #PWR011
+L GND-RESCUE-server_lader #PWR011
 U 1 1 545FE41F
 P 850 850
 F 0 "#PWR011" H 850 850 30  0001 C CNN
@@ -216,7 +215,7 @@ F 3 "" H 850 850 60  0000 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L ZENER D1
+L ZENER-RESCUE-server_lader D1
 U 1 1 545FE433
 P 1650 950
 F 0 "D1" H 1650 1050 50  0000 C CNN
@@ -227,7 +226,7 @@ F 3 "" H 1650 950 60  0000 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L GND #PWR012
+L GND-RESCUE-server_lader #PWR012
 U 1 1 545FE48A
 P 1650 1150
 F 0 "#PWR012" H 1650 1150 30  0001 C CNN
@@ -249,7 +248,7 @@ F 3 "" H 1650 750 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L R R1
+L R-RESCUE-server_lader R1
 U 1 1 545FE7C4
 P 950 2100
 F 0 "R1" V 1030 2100 40  0000 C CNN
@@ -260,7 +259,7 @@ F 3 "" H 950 2100 30  0000 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L C C4
+L C-RESCUE-server_lader C4
 U 1 1 545FE861
 P 1200 2300
 F 0 "C4" H 1200 2400 40  0000 L CNN
@@ -282,7 +281,7 @@ F 3 "" H 700 2100 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR015
+L GND-RESCUE-server_lader #PWR015
 U 1 1 545FEA7D
 P 1200 2500
 F 0 "#PWR015" H 1200 2500 30  0001 C CNN
@@ -310,7 +309,7 @@ F 3 "" H 5900 550 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR016
+L GND-RESCUE-server_lader #PWR016
 U 1 1 54601438
 P 5650 1750
 F 0 "#PWR016" H 5650 1750 30  0001 C CNN
@@ -355,7 +354,7 @@ F 3 "" H 8550 2350 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L R R14
+L R-RESCUE-server_lader R14
 U 1 1 54629E8F
 P 10350 1700
 F 0 "R14" V 10430 1700 40  0000 C CNN
@@ -366,7 +365,7 @@ F 3 "" H 10350 1700 30  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L R R15
+L R-RESCUE-server_lader R15
 U 1 1 54629EFA
 P 10350 2200
 F 0 "R15" V 10430 2200 40  0000 C CNN
@@ -377,7 +376,7 @@ F 3 "" H 10350 2200 30  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C C19
+L C-RESCUE-server_lader C19
 U 1 1 54629CFA
 P 10100 1650
 F 0 "C19" H 10100 1750 40  0000 L CNN
@@ -388,7 +387,7 @@ F 3 "" H 10100 1650 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C C18
+L C-RESCUE-server_lader C18
 U 1 1 5462A0B7
 P 9600 1850
 F 0 "C18" H 9600 1950 40  0000 L CNN
@@ -410,7 +409,7 @@ F 3 "" H 8150 1450 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C C17
+L C-RESCUE-server_lader C17
 U 1 1 5462A271
 P 8150 1650
 F 0 "C17" H 8150 1750 40  0000 L CNN
@@ -421,7 +420,7 @@ F 3 "" H 8150 1650 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C C21
+L C-RESCUE-server_lader C21
 U 1 1 5462A430
 P 10700 1650
 F 0 "C21" H 10700 1750 40  0000 L CNN
@@ -443,7 +442,7 @@ F 3 "" H 10700 1450 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C C1
+L C-RESCUE-server_lader C1
 U 1 1 5462A945
 P 600 3400
 F 0 "C1" H 600 3500 40  0000 L CNN
@@ -454,7 +453,7 @@ F 3 "" H 600 3400 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR020
+L GND-RESCUE-server_lader #PWR020
 U 1 1 5462A9CC
 P 600 3600
 F 0 "#PWR020" H 600 3600 30  0001 C CNN
@@ -476,7 +475,7 @@ F 3 "" H 600 3200 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C C5
+L C-RESCUE-server_lader C5
 U 1 1 5462AB07
 P 1950 950
 F 0 "C5" H 1950 1050 40  0000 L CNN
@@ -487,7 +486,7 @@ F 3 "" H 1950 950 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR022
+L GND-RESCUE-server_lader #PWR022
 U 1 1 5462AC0F
 P 1950 1150
 F 0 "#PWR022" H 1950 1150 30  0001 C CNN
@@ -498,7 +497,7 @@ F 3 "" H 1950 1150 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C C2
+L C-RESCUE-server_lader C2
 U 1 1 5462AC6A
 P 850 3400
 F 0 "C2" H 850 3500 40  0000 L CNN
@@ -509,7 +508,7 @@ F 3 "" H 850 3400 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR023
+L GND-RESCUE-server_lader #PWR023
 U 1 1 5462AC70
 P 850 3600
 F 0 "#PWR023" H 850 3600 30  0001 C CNN
@@ -531,7 +530,7 @@ F 3 "" H 850 3200 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C C3
+L C-RESCUE-server_lader C3
 U 1 1 5462AD56
 P 1100 3400
 F 0 "C3" H 1100 3500 40  0000 L CNN
@@ -542,7 +541,7 @@ F 3 "" H 1100 3400 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR025
+L GND-RESCUE-server_lader #PWR025
 U 1 1 5462AD5C
 P 1100 3600
 F 0 "#PWR025" H 1100 3600 30  0001 C CNN
@@ -564,7 +563,7 @@ F 3 "" H 1100 3200 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L TL071 U6
+L TL071-RESCUE-server_lader U6
 U 1 1 54629CF8
 P 10450 3150
 F 0 "U6" H 10600 3450 70  0000 C CNN
@@ -619,7 +618,7 @@ F 3 "" H 6650 1550 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR030
+L GND-RESCUE-server_lader #PWR030
 U 1 1 5462A8F4
 P 6650 1750
 F 0 "#PWR030" H 6650 1750 30  0001 C CNN
@@ -795,7 +794,7 @@ F 3 "" H 6600 3500 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR044
+L GND-RESCUE-server_lader #PWR044
 U 1 1 5462BB3B
 P 6600 3600
 F 0 "#PWR044" H 6600 3600 30  0001 C CNN
@@ -806,7 +805,7 @@ F 3 "" H 6600 3600 60  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L GND #PWR045
+L GND-RESCUE-server_lader #PWR045
 U 1 1 5462BB61
 P 6600 4200
 F 0 "#PWR045" H 6600 4200 30  0001 C CNN
@@ -817,7 +816,7 @@ F 3 "" H 6600 4200 60  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L C C14
+L C-RESCUE-server_lader C14
 U 1 1 5462C075
 P 7650 2700
 F 0 "C14" H 7650 2800 40  0000 L CNN
@@ -828,7 +827,7 @@ F 3 "" H 7650 2700 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C C16
+L C-RESCUE-server_lader C16
 U 1 1 5462C2DF
 P 8000 3250
 F 0 "C16" H 8000 3350 40  0000 L CNN
@@ -839,7 +838,7 @@ F 3 "" H 8000 3250 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C C15
+L C-RESCUE-server_lader C15
 U 1 1 5462C429
 P 7800 3250
 F 0 "C15" H 7800 3350 40  0000 L CNN
@@ -860,7 +859,7 @@ SS_DAC
 NoConn ~ 6600 4000
 NoConn ~ 7650 4000
 $Comp
-L C C12
+L C-RESCUE-server_lader C12
 U 1 1 54641D95
 P 6900 2950
 F 0 "C12" H 6900 3050 40  0000 L CNN
@@ -882,7 +881,7 @@ F 3 "" H 6900 2750 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR047
+L GND-RESCUE-server_lader #PWR047
 U 1 1 54641E3A
 P 6900 3150
 F 0 "#PWR047" H 6900 3150 30  0001 C CNN
@@ -893,7 +892,7 @@ F 3 "" H 6900 3150 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C C13
+L C-RESCUE-server_lader C13
 U 1 1 54641FE6
 P 7350 2950
 F 0 "C13" H 7350 3050 40  0000 L CNN
@@ -1005,7 +1004,7 @@ $EndComp
 Text Notes 7700 900  0    157  ~ 0
 galvanisch getrennter Teil
 $Comp
-L R R16
+L R-RESCUE-server_lader R16
 U 1 1 54644588
 P 10550 3850
 F 0 "R16" V 10630 3850 40  0000 C CNN
@@ -1016,7 +1015,7 @@ F 3 "" H 10550 3850 30  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L R R13
+L R-RESCUE-server_lader R13
 U 1 1 546446D7
 P 9950 4100
 F 0 "R13" V 10030 4100 40  0000 C CNN
@@ -1042,7 +1041,7 @@ Vref
 Text Label 9800 3350 2    60   ~ 0
 Vref
 $Comp
-L R R12
+L R-RESCUE-server_lader R12
 U 1 1 54644B94
 P 9800 3600
 F 0 "R12" V 9880 3600 40  0000 C CNN
@@ -1053,7 +1052,7 @@ F 3 "" H 9800 3600 30  0000 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L R R8
+L R-RESCUE-server_lader R8
 U 1 1 5464E205
 P 4700 1650
 F 0 "R8" V 4780 1650 40  0000 C CNN
@@ -1064,7 +1063,7 @@ F 3 "" H 4700 1650 30  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L R R7
+L R-RESCUE-server_lader R7
 U 1 1 5464E48C
 P 4700 1150
 F 0 "R7" V 4780 1150 40  0000 C CNN
@@ -1075,7 +1074,7 @@ F 3 "" H 4700 1150 30  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR058
+L GND-RESCUE-server_lader #PWR058
 U 1 1 5464E544
 P 4700 1900
 F 0 "#PWR058" H 4700 1900 30  0001 C CNN
@@ -1088,7 +1087,7 @@ $EndComp
 Text Label 4700 1400 2    60   ~ 0
 U_Netzteil
 $Comp
-L R R10
+L R-RESCUE-server_lader R10
 U 1 1 5464EC74
 P 5200 1650
 F 0 "R10" V 5280 1650 40  0000 C CNN
@@ -1099,7 +1098,7 @@ F 3 "" H 5200 1650 30  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L R R9
+L R-RESCUE-server_lader R9
 U 1 1 5464EC7A
 P 5200 1150
 F 0 "R9" V 5280 1150 40  0000 C CNN
@@ -1110,7 +1109,7 @@ F 3 "" H 5200 1150 30  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR059
+L GND-RESCUE-server_lader #PWR059
 U 1 1 5464EC80
 P 5200 1900
 F 0 "#PWR059" H 5200 1900 30  0001 C CNN
@@ -1145,7 +1144,7 @@ F 3 "" H 650 750 60  0000 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L GND #PWR060
+L GND-RESCUE-server_lader #PWR060
 U 1 1 5464F6D5
 P 3100 6500
 F 0 "#PWR060" H 3100 6500 30  0001 C CNN
@@ -1156,7 +1155,7 @@ F 3 "" H 3100 6500 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR061
+L GND-RESCUE-server_lader #PWR061
 U 1 1 5464F6DD
 P 1200 5450
 F 0 "#PWR061" H 1200 5450 30  0001 C CNN
@@ -1169,7 +1168,7 @@ $EndComp
 NoConn ~ 1200 5600
 NoConn ~ 1200 5700
 $Comp
-L GND #PWR062
+L GND-RESCUE-server_lader #PWR062
 U 1 1 5464F6F7
 P 4650 6450
 F 0 "#PWR062" H 4650 6450 30  0001 C CNN
@@ -1180,7 +1179,7 @@ F 3 "" H 4650 6450 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C C7
+L C-RESCUE-server_lader C7
 U 1 1 5464F6FD
 P 4650 6250
 F 0 "C7" H 4650 6350 40  0000 L CNN
@@ -1191,7 +1190,7 @@ F 3 "" H 4650 6250 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR063
+L GND-RESCUE-server_lader #PWR063
 U 1 1 5464F70A
 P 4900 6450
 F 0 "#PWR063" H 4900 6450 30  0001 C CNN
@@ -1202,7 +1201,7 @@ F 3 "" H 4900 6450 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C C9
+L C-RESCUE-server_lader C9
 U 1 1 5464F710
 P 4900 6250
 F 0 "C9" H 4900 6350 40  0000 L CNN
@@ -1213,7 +1212,7 @@ F 3 "" H 4900 6250 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR064
+L GND-RESCUE-server_lader #PWR064
 U 1 1 5464F723
 P 4400 6450
 F 0 "#PWR064" H 4400 6450 30  0001 C CNN
@@ -1224,7 +1223,7 @@ F 3 "" H 4400 6450 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C C6
+L C-RESCUE-server_lader C6
 U 1 1 5464F729
 P 4400 6250
 F 0 "C6" H 4400 6350 40  0000 L CNN
@@ -1235,7 +1234,7 @@ F 3 "" H 4400 6250 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR065
+L GND-RESCUE-server_lader #PWR065
 U 1 1 5464F736
 P 3850 5450
 F 0 "#PWR065" H 3850 5450 30  0001 C CNN
@@ -1275,7 +1274,7 @@ F 3 "" H 4050 4150 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR066
+L GND-RESCUE-server_lader #PWR066
 U 1 1 54651CAD
 P 3750 4250
 F 0 "#PWR066" H 3750 4250 30  0001 C CNN
@@ -1352,7 +1351,7 @@ F 3 "" H 4950 4350 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR070
+L GND-RESCUE-server_lader #PWR070
 U 1 1 546553FA
 P 5900 4350
 F 0 "#PWR070" H 5900 4350 30  0001 C CNN
@@ -1365,7 +1364,7 @@ $EndComp
 Text Label 6150 4500 0    60   ~ 0
 U_Strom
 $Comp
-L C C11
+L C-RESCUE-server_lader C11
 U 1 1 54656004
 P 5900 4150
 F 0 "C11" H 5900 4250 40  0000 L CNN
@@ -1387,7 +1386,7 @@ F 3 "" H 5900 3950 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR072
+L GND-RESCUE-server_lader #PWR072
 U 1 1 546561B2
 P 5650 4350
 F 0 "#PWR072" H 5650 4350 30  0001 C CNN
@@ -1409,7 +1408,7 @@ F 3 "" H 1100 6000 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR073
+L GND-RESCUE-server_lader #PWR073
 U 1 1 54656C9A
 P 850 7200
 F 0 "#PWR073" H 850 7200 30  0001 C CNN
@@ -1517,7 +1516,7 @@ F 3 "" H 5850 5600 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR080
+L GND-RESCUE-server_lader #PWR080
 U 1 1 54659071
 P 5650 5350
 F 0 "#PWR080" H 5650 5350 30  0001 C CNN
@@ -1534,7 +1533,7 @@ B_D
 Text Label 5650 5650 2    60   ~ 0
 S_D
 $Comp
-L GND #PWR081
+L GND-RESCUE-server_lader #PWR081
 U 1 1 546599BD
 P 5150 5750
 F 0 "#PWR081" H 5150 5750 30  0001 C CNN
@@ -1556,7 +1555,7 @@ F 3 "" H 5650 5850 60  0000 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L GND #PWR083
+L GND-RESCUE-server_lader #PWR083
 U 1 1 54659B93
 P 4700 5750
 F 0 "#PWR083" H 4700 5750 30  0001 C CNN
@@ -1567,7 +1566,7 @@ F 3 "" H 4700 5750 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C C8
+L C-RESCUE-server_lader C8
 U 1 1 54659B99
 P 4700 5550
 F 0 "C8" H 4700 5650 40  0000 L CNN
@@ -1589,7 +1588,7 @@ F 3 "" H 4700 5350 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L R R11
+L R-RESCUE-server_lader R11
 U 1 1 54659E1B
 P 5400 5750
 F 0 "R11" V 5480 5750 40  0000 C CNN
@@ -1602,7 +1601,7 @@ $EndComp
 Text Label 5000 5350 1    60   ~ 0
 S_D
 $Comp
-L C C10
+L C-RESCUE-server_lader C10
 U 1 1 5465A59C
 P 5000 5550
 F 0 "C10" H 5000 5650 40  0000 L CNN
@@ -1613,7 +1612,7 @@ F 3 "" H 5000 5550 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR085
+L GND-RESCUE-server_lader #PWR085
 U 1 1 5465A703
 P 5000 5750
 F 0 "#PWR085" H 5000 5750 30  0001 C CNN
@@ -1626,7 +1625,7 @@ $EndComp
 NoConn ~ 3700 1600
 NoConn ~ 1800 2950
 $Comp
-L R R4
+L R-RESCUE-server_lader R4
 U 1 1 5465B300
 P 4000 1450
 F 0 "R4" V 4080 1450 40  0000 C CNN
@@ -1648,7 +1647,7 @@ F 3 "" H 4000 1200 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L R R5
+L R-RESCUE-server_lader R5
 U 1 1 5465C199
 P 4400 3500
 F 0 "R5" V 4480 3500 40  0000 C CNN
@@ -1681,7 +1680,7 @@ F 3 "" H 5600 2600 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR088
+L GND-RESCUE-server_lader #PWR088
 U 1 1 5465CDDF
 P 4950 2750
 F 0 "#PWR088" H 4950 2750 30  0001 C CNN
@@ -1707,7 +1706,7 @@ on
 Text Label 4950 2450 2    60   ~ 0
 on
 $Comp
-L GND #PWR089
+L GND-RESCUE-server_lader #PWR089
 U 1 1 5465E330
 P 4050 2950
 F 0 "#PWR089" H 4050 2950 30  0001 C CNN
@@ -1740,7 +1739,7 @@ F 3 "" H 6150 700 60  0000 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L GND #PWR092
+L GND-RESCUE-server_lader #PWR092
 U 1 1 5465EBAA
 P 5850 750
 F 0 "#PWR092" H 5850 750 30  0001 C CNN
@@ -1762,7 +1761,7 @@ F 3 "" H 6150 700 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR094
+L GND-RESCUE-server_lader #PWR094
 U 1 1 54651961
 P 2900 1300
 F 0 "#PWR094" H 2900 1300 30  0001 C CNN
@@ -1777,7 +1776,7 @@ CSB_D
 Text Label 3250 6500 3    60   ~ 0
 RS_D
 $Comp
-L R R6
+L R-RESCUE-server_lader R6
 U 1 1 54653AE7
 P 4450 2500
 F 0 "R6" V 4530 2500 40  0000 C CNN
@@ -1788,7 +1787,7 @@ F 3 "" H 4450 2500 30  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L LED D2
+L LED-RESCUE-server_lader D2
 U 1 1 54653C35
 P 4700 2300
 F 0 "D2" H 4700 2400 50  0000 C CNN
@@ -1799,7 +1798,7 @@ F 3 "" H 4700 2300 60  0000 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L GND #PWR095
+L GND-RESCUE-server_lader #PWR095
 U 1 1 54653D38
 P 4700 2100
 F 0 "#PWR095" H 4700 2100 30  0001 C CNN
@@ -1821,7 +1820,7 @@ F 3 "" H 2400 6500 60  0000 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L R R2
+L R-RESCUE-server_lader R2
 U 1 1 54656562
 P 3850 1400
 F 0 "R2" V 3930 1400 40  0000 C CNN
@@ -1854,7 +1853,7 @@ F 3 "" H 1100 750 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L R R3
+L R-RESCUE-server_lader R3
 U 1 1 5465BAC2
 P 3950 3800
 F 0 "R3" V 4030 3800 40  0000 C CNN
@@ -1865,7 +1864,7 @@ F 3 "" H 3950 3800 30  0000 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L C C22
+L C-RESCUE-server_lader C22
 U 1 1 5465C97B
 P 11000 4250
 F 0 "C22" H 11000 4350 40  0000 L CNN
@@ -1876,7 +1875,7 @@ F 3 "" H 11000 4250 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C C23
+L C-RESCUE-server_lader C23
 U 1 1 5465CB51
 P 11000 4700
 F 0 "C23" H 11000 4800 40  0000 L CNN
@@ -1947,7 +1946,7 @@ Text Label 9750 5000 2    60   ~ 0
 V_current
 NoConn ~ 9750 4900
 $Comp
-L C C20
+L C-RESCUE-server_lader C20
 U 1 1 546609C8
 P 10550 4050
 F 0 "C20" H 10550 4150 40  0000 L CNN
@@ -1982,7 +1981,7 @@ F 3 "" H 4050 2650 60  0000 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L R R17
+L R-RESCUE-server_lader R17
 U 1 1 546588C7
 P 5900 4500
 F 0 "R17" V 5980 4500 40  0000 C CNN
@@ -1993,7 +1992,7 @@ F 3 "" H 5900 4500 30  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L C C24
+L C-RESCUE-server_lader C24
 U 1 1 5465917C
 P 6150 4700
 F 0 "C24" H 6150 4800 40  0000 L CNN
@@ -2004,7 +2003,7 @@ F 3 "" H 6150 4700 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR0102
+L GND-RESCUE-server_lader #PWR0102
 U 1 1 546591E2
 P 6150 4900
 F 0 "#PWR0102" H 6150 4900 30  0001 C CNN
@@ -2026,7 +2025,7 @@ F 3 "" H 2900 1050 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR0103
+L GND-RESCUE-server_lader #PWR0103
 U 1 1 5466ABD3
 P 1800 2850
 F 0 "#PWR0103" H 1800 2850 30  0001 C CNN
@@ -2037,7 +2036,7 @@ F 3 "" H 1800 2850 60  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L C C25
+L C-RESCUE-server_lader C25
 U 1 1 5466D39F
 P 4900 1650
 F 0 "C25" H 4900 1750 40  0000 L CNN
@@ -2048,7 +2047,7 @@ F 3 "" H 4900 1650 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C C26
+L C-RESCUE-server_lader C26
 U 1 1 5466D714
 P 5400 1650
 F 0 "C26" H 5400 1750 40  0000 L CNN
@@ -2059,7 +2058,7 @@ F 3 "" H 5400 1650 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR0104
+L GND-RESCUE-server_lader #PWR0104
 U 1 1 5467C6CE
 P 5150 6450
 F 0 "#PWR0104" H 5150 6450 30  0001 C CNN
@@ -2070,7 +2069,7 @@ F 3 "" H 5150 6450 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C C27
+L C-RESCUE-server_lader C27
 U 1 1 5467C6D4
 P 5150 6250
 F 0 "C27" H 5150 6350 40  0000 L CNN
@@ -2092,7 +2091,7 @@ F 3 "" H 5150 6050 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L R R20
+L R-RESCUE-server_lader R20
 U 1 1 5467BC23
 P 4050 3100
 F 0 "R20" V 4130 3100 40  0000 C CNN
@@ -2103,7 +2102,7 @@ F 3 "" H 4050 3100 30  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L R R21
+L R-RESCUE-server_lader R21
 U 1 1 5467BCF3
 P 4050 3200
 F 0 "R21" V 4130 3200 40  0000 C CNN
@@ -2122,7 +2121,7 @@ SDA
 Text Label 950  4350 0    60   ~ 0
 SCL
 $Comp
-L R R18
+L R-RESCUE-server_lader R18
 U 1 1 5467CCF6
 P 950 4100
 F 0 "R18" V 1030 4100 40  0000 C CNN
@@ -2133,7 +2132,7 @@ F 3 "" H 950 4100 30  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L R R19
+L R-RESCUE-server_lader R19
 U 1 1 5467CE54
 P 1300 4100
 F 0 "R19" V 1380 4100 40  0000 C CNN
@@ -2391,7 +2390,7 @@ Wire Wire Line
 	1550 2350 1550 2100
 Connection ~ 1550 2100
 $Comp
-L GND #PWR0108
+L GND-RESCUE-server_lader #PWR0108
 U 1 1 5468EC9E
 P 1550 3350
 F 0 "#PWR0108" H 1550 3350 30  0001 C CNN
